@@ -25,6 +25,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.example.ai.configureAppCheck
 import com.example.auth.AuthScreen
 import com.example.auth.ZyvoraSplashScreen
 import com.example.auth.authStateFlow
@@ -46,6 +47,7 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        configureAppCheck(this, intent)
         enableEdgeToEdge()
         NemoxNotificationHelper.ensureChannels(this)
         NemoxNotificationHelper.schedulePeriodicSync(this)

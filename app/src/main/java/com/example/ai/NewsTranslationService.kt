@@ -39,7 +39,7 @@ class FirebaseAiNewsTranslator(
     private var cacheHydrated = false
 
     private val model by lazy {
-        val responseSchema = Schema.obj(
+        val translationSchema = Schema.obj(
             mapOf(
                 "translations" to Schema.array(
                     Schema.obj(
@@ -58,7 +58,7 @@ class FirebaseAiNewsTranslator(
             generationConfig = generationConfig {
                 temperature = 0.2f
                 responseMimeType = "application/json"
-                responseSchema = responseSchema
+                responseSchema = translationSchema
             },
             systemInstruction = content {
                 text(
