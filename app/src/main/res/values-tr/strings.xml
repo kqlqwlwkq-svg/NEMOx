@@ -1,0 +1,168 @@
+<resources>
+    <string name="app_name">ZYVORA</string>
+    <string name="brand_tagline">YOUR WORLD. YOUR GAMES.</string>
+    <string name="splash_entering">Oyun Portalına Giriliyor…</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Ana Sayfa</string>
+    <string name="nav_discover">Keşfet</string>
+    <string name="nav_search">Ara</string>
+    <string name="nav_my_games">Oyunlarım</string>
+    <string name="nav_news">Haberler</string>
+    <string name="nav_upcoming">Yakında</string>
+    <string name="nav_trending">Trendler</string>
+    <string name="nav_profile">Profilim</string>
+
+    <!-- Auth & Guest Mode -->
+    <string name="auth_title">ZYVORA</string>
+    <string name="auth_subtitle">Oyun keşfi, resmi yama notları, bağlı hesaplar, görevler ve yaklaşan çıkışlar için küresel oyun portalın.</string>
+    <string name="auth_sign_in_google">Google ile Giriş Yap</string>
+    <string name="auth_continue_guest">Misafir Olarak Devam Et</string>
+    <string name="auth_guest_note">Hesap oluşturmadan oyunları, trend listelerini, haberleri keşfedin ve kütüphanenizi cihazınızda yerel olarak saklayın.</string>
+    <string name="auth_security_note">Google Giriş ile korunur. Oyun hesap şifrelerinizi asla istemeyiz veya saklamayız.</string>
+    <string name="auth_feature_library">Tüm oyunlarını, güncellemeleri ve sezonları takip et</string>
+    <string name="auth_feature_accounts">Şeffaf API durumu ile Oyuncu ID\'lerini bağla</string>
+    <string name="auth_feature_news">Resmi geliştirici haberleri ve canlı yama notları</string>
+    <string name="auth_sign_out">Çıkış Yap</string>
+    <string name="guest_mode_label">Misafir Modu (Cihazda Kayıtlı)</string>
+    <string name="guest_exit_label">Misafir Modundan Çık</string>
+    <string name="guest_signin_sync_title">Cihazlar Arası Senkronizasyon İçin Giriş Yapın</string>
+    <string name="guest_signin_accounts_desc">Oyun hesaplarını bağlamak ve kütüphanenizi cihazlar arasında senkronize etmek için Google hesabı gerekir. Misafir olarak Keşfet, Ara, Haberler ve yerel kütüphaneyi kullanmaya devam edebilirsiniz.</string>
+
+    <!-- Discover & Trending -->
+    <string name="discover_title">Keşfet</string>
+    <string name="trending_title">Trend Oyunlar</string>
+    <string name="trending_subtitle">Resmi Steam Charts ve FreeToGame listelerinden canlı popülerlik sıralamaları</string>
+    <string name="recommended_title">Senin İçin Önerilenler</string>
+    <string name="genres_title">Oyun Türleri</string>
+    <string name="choose_interests_title">Favori Türlerini Seç</string>
+    <string name="choose_interests_desc">Önerilen oyunları kişiselleştirmek için bir veya daha fazla tür seç. İstediğin zaman değiştirebilirsin.</string>
+    <string name="change_interests">İlgi Alanlarını Değiştir</string>
+    <string name="save_interests">İlgi Alanlarını Kaydet</string>
+    <string name="learn_more">Detaylar</string>
+    <string name="trending_reason_label">Neden trend</string>
+    <string name="verified_rating_label">Puan</string>
+    <string name="no_verified_rating">Henüz puan yok</string>
+
+    <!-- Search & Filters -->
+    <string name="search_title">Oyun Ara</string>
+    <string name="search_games">Herhangi bir oyunu adıyla ara…</string>
+    <string name="explorer_title">Oyun Gezgini</string>
+    <string name="recent_searches">Son Aramalar</string>
+    <string name="clear_history">Temizle</string>
+    <string name="suggestions_label">Öneriler</string>
+    <string name="filter_genre">Tür</string>
+    <string name="filter_platform">Platform</string>
+    <string name="filter_release_date">Çıkış Tarihi</string>
+    <string name="filter_pricing">Fiyat</string>
+    <string name="filter_status">Durum</string>
+    <string name="price_free">Ücretsiz</string>
+    <string name="price_paid">Ücretli</string>
+    <string name="era_upcoming">Yakında</string>
+    <string name="era_recent">2024–2026</string>
+    <string name="era_modern">2020–2023</string>
+    <string name="era_classic">Klasikler</string>
+    <string name="view_details">Detaylar</string>
+
+    <!-- Common Actions -->
+    <string name="notifications_title">Bildirimler</string>
+    <string name="missions_title">Görev Takibi</string>
+    <string name="accounts_title">Oyun Hesapları</string>
+    <string name="settings_title">Ayarlar</string>
+    <string name="add_game">Oyun Ekle</string>
+    <string name="add_manual_game">Özel Oyun Ekle</string>
+    <string name="add_mission">Görev Ekle</string>
+    <string name="link_account">Oyun Hesabı Bağla</string>
+    <string name="add_to_library">Kütüphaneye Ekle</string>
+    <string name="in_library">Kütüphanede</string>
+    <string name="add_to_waitlist">Bekleme Listesine Ekle</string>
+    <string name="in_waitlist">Listede</string>
+    <string name="read_full_article">Haberi Oku</string>
+    <string name="watch_trailer">Fragmanı İzle</string>
+    <string name="official_site">Resmi Site</string>
+    <string name="community_hub">Topluluk</string>
+    <string name="refresh">Yenile</string>
+    <string name="save">Kaydet</string>
+    <string name="cancel">İptal</string>
+    <string name="delete">Sil</string>
+    <string name="edit">Düzenle</string>
+    <string name="retry">Tekrar Dene</string>
+    <string name="close">Kapat</string>
+
+    <!-- Dashboard -->
+    <string name="dashboard_welcome">Komuta Merkezi</string>
+    <string name="dashboard_games_count">Oyunlar</string>
+    <string name="dashboard_missions_left">Kalan Görev</string>
+    <string name="dashboard_alerts_count">Uyarılar</string>
+    <string name="section_your_library">Oyun Kütüphanen</string>
+    <string name="section_needs_update">Güncelleme Gerekenler</string>
+    <string name="section_ending_soon">Yakında Biten Etkinlikler</string>
+    <string name="section_active_missions">Aktif Görevler</string>
+    <string name="section_favorite_news">Favori Oyun Haberleri</string>
+    <string name="view_all">Tümünü Gör</string>
+
+    <!-- Sorting & Filters -->
+    <string name="sort_most_played">En Çok Oynanan</string>
+    <string name="sort_favorites">Favoriler</string>
+    <string name="sort_recent_update">Son Güncellenen</string>
+    <string name="filter_all">Tümü</string>
+    <string name="filter_official">Yalnızca Resmi</string>
+    <string name="filter_daily">Günlük</string>
+    <string name="filter_weekly">Haftalık</string>
+    <string name="filter_seasonal">Sezonluk</string>
+
+    <!-- Game Statuses -->
+    <string name="status_available">Mevcut</string>
+    <string name="status_upcoming">Yakında</string>
+    <string name="status_delayed">Ertelendi</string>
+    <string name="status_cancelled">İptal Edildi</string>
+    <string name="badge_official_dev">Resmi Geliştirici</string>
+    <string name="badge_news">Oyun Haberleri</string>
+    <string name="badge_needs_update">Güncelleme Var</string>
+
+    <!-- Empty States -->
+    <string name="empty_library_title">Oyun Kütüphanen Boş</string>
+    <string name="empty_library_desc">Güncellemeleri, sezonları ve görevleri takip etmek için Steam ve FreeToGame kataloglarında ara veya özel oyun ekle.</string>
+    <string name="empty_missions_title">Eklenen Görev Yok</string>
+    <string name="empty_missions_desc">İlerlemeni ve son tarihlerini takip etmek için günlük, haftalık veya sezonluk görevler ekle.</string>
+    <string name="empty_accounts_title">Bağlı Oyun Hesabı Yok</string>
+    <string name="empty_accounts_desc">Minecraft, Steam, PUBG Mobile, Fortnite, Blood Strike, Call of Duty veya Rocket League Oyuncu ID\'ni şifresiz bağla.</string>
+    <string name="empty_news_title">Haber Yüklenmedi</string>
+    <string name="empty_news_desc">Resmi geliştirici akışlarını çekmek için kütüphanene oyun ekle veya internet bağlantını kontrol et.</string>
+    <string name="empty_notifications_title">Okunmamış Bildirim Yok</string>
+    <string name="empty_notifications_desc">Yeni güncellemeler, biten sezonlar, süresi dolan görevler ve bekleme listesi çıkış uyarıları burada görünür.</string>
+    <string name="empty_search_title">Eşleşen Oyun Bulunamadı</string>
+    <string name="empty_search_desc">Başka bir oyun adı dene veya seçili filtrelerden bazılarını kaldır.</string>
+
+    <!-- Settings & Preferences -->
+    <string name="language_label">Uygulama Dili</string>
+    <string name="lang_system">Sistem Dili</string>
+    <string name="lang_en">English</string>
+    <string name="lang_ar">العربية</string>
+    <string name="lang_tr">Türkçe</string>
+    <string name="dark_mode_label">Karanlık Mod (ZYVORA Koyu Mor)</string>
+    <string name="notifications_master">Bildirimleri Etkinleştir</string>
+    <string name="notif_updates">Yeni Oyun Güncelleme Uyarıları</string>
+    <string name="notif_seasons">Sezon Bitiş Uyarıları</string>
+    <string name="notif_missions">Süresi Dolan Görev Uyarıları</string>
+    <string name="notif_upcoming">Bekleme Listesi Çıkış Uyarıları</string>
+    <string name="notif_news">Favori Oyun Haber Uyarıları</string>
+    <string name="scan_alerts_now">Yeni Uyarıları Şimdi Tara</string>
+    <string name="mark_all_read">Tümünü Okundu İşaretle</string>
+
+    <!-- Game Detail -->
+    <string name="detail_player_stats">Oyuncu Seviyesi ve İstatistikler</string>
+    <string name="detail_updates_seasons">Güncellemeler ve Sezonlar</string>
+    <string name="detail_missions">Oyun Görevleri</string>
+    <string name="detail_latest_news">Son Haberler ve Yama Notları</string>
+    <string name="detail_links">Resmi Bağlantılar ve Topluluklar</string>
+    <string name="detail_notifications">Oyun Bazlı Bildirimler</string>
+    <string name="completed_label">Tamamlanan</string>
+    <string name="remaining_label">Kalan</string>
+
+    <!-- Accounts & API Transparency -->
+    <string name="api_live_official">Canlı Resmi API</string>
+    <string name="api_live_xml">Canlı Açık Profil</string>
+    <string name="api_manual_only">Manuel Takip (Açık API Yok)</string>
+    <string name="no_passwords_banner">Önce Gizlilik: Şifreler asla istenmez ve saklanmaz. Yalnızca herkese açık Oyuncu ID veya kullanıcı adları kullanılır.</string>
+</resources>

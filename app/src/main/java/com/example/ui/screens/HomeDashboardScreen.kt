@@ -22,12 +22,18 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AccountTree
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Bolt
+import androidx.compose.material.icons.rounded.Event
+import androidx.compose.material.icons.rounded.Explore
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
+import androidx.compose.material.icons.rounded.LocalFireDepartment
+import androidx.compose.material.icons.rounded.Newspaper
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.SystemUpdate
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -52,6 +58,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.R
+import com.example.model.CatalogGameItem
 import com.example.model.GameMission
 import com.example.model.LibraryGame
 import com.example.model.LibrarySortOrder
@@ -64,6 +71,7 @@ import com.example.ui.components.MissionCard
 import com.example.ui.components.NewsArticleCard
 import com.example.ui.components.SectionHeader
 import com.example.ui.components.StatusBadge
+import com.example.ui.components.ZyvoraGeometricMark
 import com.example.ui.components.formatRemainingTime
 import com.example.ui.components.openExternalUrl
 import com.example.viewmodel.UiState
@@ -77,6 +85,8 @@ fun HomeDashboardScreen(
     newsState: UiState<List<NewsArticle>>,
     liveEventsState: UiState<List<LiveEventItem>>,
     notificationsState: UiState<List<UserNotification>>,
+    trendingState: UiState<List<CatalogGameItem>> = UiState.Success(emptyList()),
+    isArabic: Boolean = false,
     onSortChanged: (LibrarySortOrder) -> Unit,
     onOpenGameDetail: (String) -> Unit,
     onToggleFavorite: (LibraryGame) -> Unit,
@@ -84,6 +94,11 @@ fun HomeDashboardScreen(
     onOpenMyGames: () -> Unit,
     onOpenMissions: () -> Unit,
     onOpenNews: () -> Unit,
+    onOpenUpcoming: () -> Unit = {},
+    onOpenTrending: () -> Unit = {},
+    onOpenDiscover: () -> Unit = {},
+    onOpenAccounts: () -> Unit = {},
+    onOpenCatalogPreview: (CatalogGameItem) -> Unit = {},
     onIncrementMission: (GameMission) -> Unit,
     onToggleMission: (GameMission) -> Unit
 ) {
@@ -112,7 +127,7 @@ fun HomeDashboardScreen(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        // 1. Cyber Command Hero Banner
+        // 1. ZYVORA Command Portal Hero Banner
         item {
             Card(
                 shape = MaterialTheme.shapes.large,
@@ -123,8 +138,8 @@ fun HomeDashboardScreen(
                         1.dp,
                         Brush.linearGradient(
                             listOf(
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
-                                MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f)
+                                MaterialTheme.colorScheme.secondary.copy(alpha = 0.65f),
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.65f)
                             )
                         ),
                         MaterialTheme.shapes.large
@@ -132,23 +147,23 @@ fun HomeDashboardScreen(
             ) {
                 Box(modifier = Modifier.fillMaxWidth()) {
                     Image(
-                        painter = painterResource(id = R.drawable.img_nemox_hero),
+                        painter = painterResource(id = R.drawable.img_zyvora_hero),
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
-                        alpha = 0.35f,
+                        alpha = 0.36f,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(168.dp)
+                            .height(172.dp)
                     )
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(168.dp)
+                            .height(172.dp)
                             .background(
                                 Brush.horizontalGradient(
                                     listOf(
-                                        MaterialTheme.colorScheme.background.copy(alpha = 0.9f),
-                                        MaterialTheme.colorScheme.background.copy(alpha = 0.45f)
+                                        MaterialTheme.colorScheme.background.copy(alpha = 0.92f),
+                                        MaterialTheme.colorScheme.background.copy(alpha = 0.50f)
                                     )
                                 )
                             )
@@ -165,11 +180,16 @@ fun HomeDashboardScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = stringResource(R.string.dashboard_welcome).uppercase(),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    ZyvoraGeometricMark(size = 18.dp, glowAlpha = 0.25f)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = stringResource(R.string.dashboard_welcome).uppercase(),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.secondary
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
                                 Text(
                                     text = displayName,
                                     style = MaterialTheme.typography.headlineMedium,
@@ -180,16 +200,16 @@ fun HomeDashboardScreen(
                             }
                             Surface(
                                 shape = CircleShape,
-                                color = MaterialTheme.colorScheme.primaryContainer,
+                                color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier
-                                    .size(44.dp)
+                                    .size(48.dp)
                                     .clickable { onOpenExplorer() }
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
                                         imageVector = Icons.Rounded.Add,
                                         contentDescription = stringResource(R.string.add_game),
-                                        tint = MaterialTheme.colorScheme.primary
+                                        tint = MaterialTheme.colorScheme.onPrimary
                                     )
                                 }
                             }
@@ -223,6 +243,106 @@ fun HomeDashboardScreen(
                                 accent = MaterialTheme.colorScheme.tertiary,
                                 modifier = Modifier.weight(1f)
                             )
+                        }
+                    }
+                }
+            }
+        }
+
+        // Quick Hub Navigation Strip (News, Upcoming, Trending, Discover, Accounts)
+        item {
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                item {
+                    AssistChip(
+                        onClick = onOpenTrending,
+                        leadingIcon = { Icon(Icons.Rounded.LocalFireDepartment, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary) },
+                        label = { Text(stringResource(R.string.nav_trending)) },
+                        modifier = Modifier.testTag("home_quick_trending")
+                    )
+                }
+                item {
+                    AssistChip(
+                        onClick = onOpenNews,
+                        leadingIcon = { Icon(Icons.Rounded.Newspaper, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                        label = { Text(stringResource(R.string.nav_news)) },
+                        modifier = Modifier.testTag("home_quick_news")
+                    )
+                }
+                item {
+                    AssistChip(
+                        onClick = onOpenUpcoming,
+                        leadingIcon = { Icon(Icons.Rounded.Event, contentDescription = null, tint = MaterialTheme.colorScheme.secondary) },
+                        label = { Text(stringResource(R.string.nav_upcoming)) },
+                        modifier = Modifier.testTag("home_quick_upcoming")
+                    )
+                }
+                item {
+                    AssistChip(
+                        onClick = onOpenDiscover,
+                        leadingIcon = { Icon(Icons.Rounded.Explore, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                        label = { Text(stringResource(R.string.nav_discover)) }
+                    )
+                }
+                item {
+                    AssistChip(
+                        onClick = onOpenAccounts,
+                        leadingIcon = { Icon(Icons.Rounded.AccountTree, contentDescription = null, tint = MaterialTheme.colorScheme.secondary) },
+                        label = { Text(stringResource(R.string.accounts_title)) }
+                    )
+                }
+            }
+        }
+
+        val trendingGames = (trendingState as? UiState.Success)?.data.orEmpty()
+        if (trendingGames.isNotEmpty()) {
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    SectionHeader(
+                        title = stringResource(R.string.trending_title),
+                        actionLabel = stringResource(R.string.view_all),
+                        onActionClick = onOpenTrending
+                    )
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        items(trendingGames.take(6), key = { "home_tr_${it.externalId}" }) { game ->
+                            val reason = if (isArabic) game.trendingReasonAr else game.trendingReasonEn
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                shape = MaterialTheme.shapes.medium,
+                                modifier = Modifier
+                                    .width(210.dp)
+                                    .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), MaterialTheme.shapes.medium)
+                                    .clickable { onOpenCatalogPreview(game) }
+                            ) {
+                                Column {
+                                    Box {
+                                        GameCoverImage(
+                                            url = game.coverUrl ?: game.iconUrl,
+                                            title = game.title,
+                                            modifier = Modifier.fillMaxWidth().height(104.dp)
+                                        )
+                                        game.trendingRank?.let { r ->
+                                            StatusBadge(
+                                                text = "#$r",
+                                                containerColor = MaterialTheme.colorScheme.primary,
+                                                contentColor = MaterialTheme.colorScheme.onPrimary,
+                                                modifier = Modifier.align(Alignment.TopStart).padding(8.dp)
+                                            )
+                                        }
+                                    }
+                                    Column(modifier = Modifier.padding(10.dp)) {
+                                        Text(game.title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        if (!reason.isNullOrBlank()) {
+                                            Text(
+                                                text = reason,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.tertiary,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }

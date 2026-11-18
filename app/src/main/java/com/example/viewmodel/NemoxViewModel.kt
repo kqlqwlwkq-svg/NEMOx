@@ -4,6 +4,8 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.GamingRemoteRepository
+import com.example.data.LocalAppPreferences
+import com.example.data.LocalGuestRepository
 import com.example.data.NemoxFirestoreRepository
 import com.example.data.SettingsDataStore
 import com.example.model.AccountApiMode
@@ -13,12 +15,16 @@ import com.example.model.GameCatalogPresets
 import com.example.model.GameMission
 import com.example.model.GameReleaseStatus
 import com.example.model.GameSourceType
+import com.example.model.GenreSpec
 import com.example.model.LibraryGame
 import com.example.model.LibrarySortOrder
 import com.example.model.LiveEventItem
 import com.example.model.MissionCategory
 import com.example.model.NewsArticle
 import com.example.model.NotificationType
+import com.example.model.SearchFilterState
+import com.example.model.SearchPricingFilter
+import com.example.model.SearchReleaseFilter
 import com.example.model.UserNotification
 import com.example.model.UserProfile
 import com.example.model.WaitlistGame
@@ -33,6 +39,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -44,7 +52,9 @@ sealed interface UiState<out T> {
 }
 
 class NemoxViewModel(
-    private val firestoreRepo: NemoxFirestoreRepository,
+    val isGuestMode: Boolean,
+    private val firestoreRepo: NemoxFirestoreRepository?,
+    private val guestRepo: LocalGuestRepository,
     private val remoteRepo: GamingRemoteRepository,
     private val settingsDataStore: SettingsDataStore,
     val currentUserId: String
@@ -68,11 +78,36 @@ class NemoxViewModel(
     private val _liveEventsState = MutableStateFlow<UiState<List<LiveEventItem>>>(UiState.Loading)
     val liveEventsState: StateFlow<UiState<List<LiveEventItem>>> = _liveEventsState.asStateFlow()
 
+    private val _trendingState = MutableStateFlow<UiState<List<CatalogGameItem>>>(UiState.Loading)
+    val trendingState: StateFlow<UiState<List<CatalogGameItem>>> = _trendingState.asStateFlow()
+
+    private val _recommendedState = MutableStateFlow<UiState<List<CatalogGameItem>>>(UiState.Loading)
+    val recommendedState: StateFlow<UiState<List<CatalogGameItem>>> = _recommendedState.asStateFlow()
+
+    private val _selectedGenre = MutableStateFlow<GenreSpec?>(null)
+    val selectedGenre: StateFlow<GenreSpec?> = _selectedGenre.asStateFlow()
+
+    private val _genreGamesState = MutableStateFlow<UiState<List<CatalogGameItem>>>(UiState.Success(emptyList()))
+    val genreGamesState: StateFlow<UiState<List<CatalogGameItem>>> = _genreGamesState.asStateFlow()
+
     private val _explorerQuery = MutableStateFlow("")
     val explorerQuery: StateFlow<String> = _explorerQuery.asStateFlow()
 
-    private val _explorerState = MutableStateFlow<UiState<List<CatalogGameItem>>>(UiState.Loading)
-    val explorerState: StateFlow<UiState<List<CatalogGameItem>>> = _explorerState.asStateFlow()
+    private val _rawSearchState = MutableStateFlow<UiState<List<CatalogGameItem>>>(UiState.Loading)
+
+    private val _searchFilters = MutableStateFlow(SearchFilterState())
+    val searchFilters: StateFlow<SearchFilterState> = _searchFilters.asStateFlow()
+
+    val explorerState: StateFlow<UiState<List<CatalogGameItem>>> = combine(
+        _rawSearchState,
+        _searchFilters
+    ) { raw, filters ->
+        when (raw) {
+            is UiState.Loading -> UiState.Loading
+            is UiState.Error -> raw
+            is UiState.Success -> UiState.Success(applySearchFilters(raw.data, filters))
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), UiState.Loading)
 
     private val _selectedCatalogPreview = MutableStateFlow<CatalogGameItem?>(null)
     val selectedCatalogPreview: StateFlow<CatalogGameItem?> = _selectedCatalogPreview.asStateFlow()
@@ -86,11 +121,30 @@ class NemoxViewModel(
     private val _isSyncingAccount = MutableStateFlow(false)
     val isSyncingAccount: StateFlow<Boolean> = _isSyncingAccount.asStateFlow()
 
-    val userProfile: StateFlow<UiState<UserProfile?>> = firestoreRepo.observeUserProfile(currentUserId)
-        .toUiStateFlow("Failed to load profile")
+    val localPreferences: StateFlow<LocalAppPreferences> = settingsDataStore.preferencesFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), LocalAppPreferences())
+
+    val preferredGenres: StateFlow<List<String>> = settingsDataStore.preferencesFlow
+        .map { it.preferredGenres }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), emptyList())
+
+    val hasCompletedGenreOnboarding: StateFlow<Boolean> = settingsDataStore.preferencesFlow
+        .map { it.hasCompletedGenreOnboarding }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), false)
+
+    val recentSearches: StateFlow<List<String>> = settingsDataStore.preferencesFlow
+        .map { it.recentSearches }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), emptyList())
+
+    val userProfile: StateFlow<UiState<UserProfile?>> = if (isGuestMode || firestoreRepo == null) {
+        flowOf<UserProfile?>(null).toUiStateFlow("Guest profile")
+    } else {
+        firestoreRepo.observeUserProfile(currentUserId).toUiStateFlow("Failed to load profile")
+    }
 
     val libraryGames: StateFlow<UiState<List<LibraryGame>>> = combine(
-        firestoreRepo.observeLibraryGames(currentUserId),
+        if (isGuestMode || firestoreRepo == null) guestRepo.observeLibraryGames()
+        else firestoreRepo.observeLibraryGames(currentUserId),
         _sortOrder
     ) { games, order ->
         when (order) {
@@ -102,43 +156,66 @@ class NemoxViewModel(
         }
     }.toUiStateFlow("Failed to load game library")
 
-    val gameAccounts: StateFlow<UiState<List<GameAccount>>> = firestoreRepo.observeGameAccounts(currentUserId)
-        .map { list -> list.sortedByDescending { it.lastSyncedAtMillis } }
-        .toUiStateFlow("Failed to load game accounts")
+    val gameAccounts: StateFlow<UiState<List<GameAccount>>> = if (isGuestMode || firestoreRepo == null) {
+        flowOf(emptyList<GameAccount>()).toUiStateFlow("Game accounts")
+    } else {
+        firestoreRepo.observeGameAccounts(currentUserId)
+            .map { list -> list.sortedByDescending { it.lastSyncedAtMillis } }
+            .toUiStateFlow("Failed to load game accounts")
+    }
 
-    val missions: StateFlow<UiState<List<GameMission>>> = firestoreRepo.observeMissions(currentUserId)
-        .map { list ->
+    val missions: StateFlow<UiState<List<GameMission>>> = (
+        if (isGuestMode || firestoreRepo == null) guestRepo.observeMissions()
+        else firestoreRepo.observeMissions(currentUserId)
+        ).map { list ->
             list.sortedWith(
                 compareBy<GameMission> { it.completed }.thenBy { it.expiresAtMillis }
             )
-        }
-        .toUiStateFlow("Failed to load missions")
+        }.toUiStateFlow("Failed to load missions")
 
-    val waitlist: StateFlow<UiState<List<WaitlistGame>>> = firestoreRepo.observeWaitlist(currentUserId)
-        .map { list -> list.sortedBy { it.releaseTimestampMillis } }
+    val waitlist: StateFlow<UiState<List<WaitlistGame>>> = (
+        if (isGuestMode || firestoreRepo == null) guestRepo.observeWaitlist()
+        else firestoreRepo.observeWaitlist(currentUserId)
+        ).map { list -> list.sortedBy { it.releaseTimestampMillis } }
         .toUiStateFlow("Failed to load waitlist")
 
-    val notifications: StateFlow<UiState<List<UserNotification>>> = firestoreRepo.observeNotifications(currentUserId)
-        .toUiStateFlow("Failed to load notifications")
+    val notifications: StateFlow<UiState<List<UserNotification>>> = (
+        if (isGuestMode || firestoreRepo == null) guestRepo.observeNotifications()
+        else firestoreRepo.observeNotifications(currentUserId)
+        ).toUiStateFlow("Failed to load notifications")
 
     init {
-        bootstrapUserProfile()
+        if (!isGuestMode) {
+            bootstrapUserProfile()
+        }
         refreshNews()
         refreshUpcoming()
         refreshLiveEvents()
-        searchExplorer("")
+        refreshTrending(forceRefresh = false)
+        viewModelScope.launch {
+            val prefs = settingsDataStore.preferencesFlow.first()
+            refreshRecommended(prefs.preferredGenres)
+        }
+        searchExplorer("", recordHistory = false)
+    }
+
+    private fun isArabicLocale(): Boolean {
+        val code = localPreferences.value.languageCode
+        return code == "ar" || (code == "system" && java.util.Locale.getDefault().language == "ar")
     }
 
     private fun bootstrapUserProfile() {
+        val repo = firestoreRepo ?: return
         viewModelScope.launch {
             val authUser = Firebase.auth.currentUser
             if (authUser != null && authUser.uid == currentUserId) {
-                firestoreRepo.ensureUserProfile(
+                val lang = settingsDataStore.preferencesFlow.first().languageCode
+                repo.ensureUserProfile(
                     userId = currentUserId,
-                    displayName = authUser.displayName ?: "Gamer",
+                    displayName = authUser.displayName ?: if (lang == "ar") "لاعب" else "Gamer",
                     email = authUser.email,
                     photoUrl = authUser.photoUrl?.toString(),
-                    defaultLang = "system"
+                    defaultLang = lang
                 )
             }
         }
@@ -158,6 +235,130 @@ class NemoxViewModel(
 
     fun setOfficialNewsOnly(only: Boolean) {
         _officialNewsOnly.value = only
+    }
+
+    fun exitGuestMode() {
+        viewModelScope.launch {
+            settingsDataStore.setGuestMode(false)
+        }
+    }
+
+    // --- DISCOVER, GENRES, TRENDING & RECOMMENDED ---
+    fun refreshTrending(forceRefresh: Boolean = true) {
+        viewModelScope.launch {
+            _trendingState.value = UiState.Loading
+            val res = remoteRepo.getTrendingGames(forceRefresh = forceRefresh)
+            _trendingState.value = res.fold(
+                onSuccess = { UiState.Success(it) },
+                onFailure = { UiState.Error(it.localizedMessage ?: "Failed to load trending games") }
+            )
+        }
+    }
+
+    fun savePreferredGenres(genreIds: List<String>) {
+        viewModelScope.launch {
+            settingsDataStore.setPreferredGenres(genreIds, onboardingDone = true)
+            refreshRecommended(genreIds)
+        }
+    }
+
+    fun refreshRecommended(genreIds: List<String> = preferredGenres.value) {
+        viewModelScope.launch {
+            _recommendedState.value = UiState.Loading
+            val res = remoteRepo.getRecommendedGames(genreIds)
+            _recommendedState.value = res.fold(
+                onSuccess = { UiState.Success(it) },
+                onFailure = { UiState.Error(it.localizedMessage ?: "Failed to load recommendations") }
+            )
+        }
+    }
+
+    fun selectGenre(genre: GenreSpec) {
+        _selectedGenre.value = genre
+        viewModelScope.launch {
+            _genreGamesState.value = UiState.Loading
+            val res = remoteRepo.getGamesByGenre(genre)
+            _genreGamesState.value = res.fold(
+                onSuccess = { UiState.Success(it) },
+                onFailure = { UiState.Error(it.localizedMessage ?: "Failed to load genre games") }
+            )
+        }
+    }
+
+    fun clearSelectedGenre() {
+        _selectedGenre.value = null
+    }
+
+    // --- SEARCH & FILTERS ---
+    fun updateSearchFilters(filters: SearchFilterState) {
+        _searchFilters.value = filters
+    }
+
+    fun resetSearchFilters() {
+        _searchFilters.value = SearchFilterState()
+    }
+
+    fun removeRecentSearch(query: String) {
+        viewModelScope.launch {
+            settingsDataStore.removeRecentSearch(query)
+        }
+    }
+
+    fun clearRecentSearches() {
+        viewModelScope.launch {
+            settingsDataStore.clearRecentSearches()
+        }
+    }
+
+    fun getSearchSuggestions(input: String): List<String> {
+        val clean = input.trim()
+        if (clean.isBlank()) return emptyList()
+        val recent = recentSearches.value.filter { it.contains(clean, ignoreCase = true) }
+        val curated = GameCatalogPresets.curatedMultiPlatformCatalog
+            .map { it.title }
+            .filter { it.contains(clean, ignoreCase = true) }
+        val trending = (_trendingState.value as? UiState.Success)?.data
+            ?.map { it.title }
+            ?.filter { it.contains(clean, ignoreCase = true) }
+            .orEmpty()
+        return (recent + curated + trending).distinctBy { it.lowercase() }.take(6)
+    }
+
+    private fun applySearchFilters(
+        items: List<CatalogGameItem>,
+        filters: SearchFilterState
+    ): List<CatalogGameItem> {
+        return items.filter { item ->
+            val matchesGenre = filters.genreId == null || run {
+                val spec = GameCatalogPresets.discoverGenres.firstOrNull { it.id == filters.genreId }
+                if (spec == null) true
+                else {
+                    val haystack = (item.genres + listOf(item.title, item.description)).joinToString(" ").lowercase()
+                    item.genres.any { it.equals(spec.nameEn, ignoreCase = true) } ||
+                        spec.matchingKeywords.any { kw -> haystack.contains(kw) }
+                }
+            }
+            val matchesPlatform = filters.platform == null || item.platforms.any { p ->
+                when (filters.platform) {
+                    "Console" -> p.contains("PS", true) || p.contains("Xbox", true) || p.contains("Switch", true) || p.contains("Console", true)
+                    else -> p.equals(filters.platform, ignoreCase = true)
+                }
+            }
+            val matchesPricing = when (filters.pricingFilter) {
+                SearchPricingFilter.ALL -> true
+                SearchPricingFilter.FREE -> item.isFreeToPlay == true || item.priceDisplay.equals("Free", ignoreCase = true)
+                SearchPricingFilter.PAID -> item.isFreeToPlay == false
+            }
+            val matchesStatus = filters.statusFilter == null || item.status == filters.statusFilter
+            val matchesRelease = when (filters.releaseFilter) {
+                SearchReleaseFilter.ALL -> true
+                SearchReleaseFilter.UPCOMING -> item.status == GameReleaseStatus.UPCOMING
+                SearchReleaseFilter.RECENT_2024_2026 -> (item.releaseYear ?: 0) in 2024..2026
+                SearchReleaseFilter.MODERN_2020_2023 -> (item.releaseYear ?: 0) in 2020..2023
+                SearchReleaseFilter.CLASSIC -> (item.releaseYear ?: 9999) < 2020
+            }
+            matchesGenre && matchesPlatform && matchesPricing && matchesStatus && matchesRelease
+        }
     }
 
     fun refreshNews() {
@@ -207,12 +408,15 @@ class NemoxViewModel(
         }
     }
 
-    fun searchExplorer(query: String) {
+    fun searchExplorer(query: String, recordHistory: Boolean = true) {
         _explorerQuery.value = query
         viewModelScope.launch {
-            _explorerState.value = UiState.Loading
+            if (recordHistory && query.isNotBlank()) {
+                settingsDataStore.addRecentSearch(query)
+            }
+            _rawSearchState.value = UiState.Loading
             val result = remoteRepo.searchGames(query)
-            _explorerState.value = result.fold(
+            _rawSearchState.value = result.fold(
                 onSuccess = { UiState.Success(it) },
                 onFailure = { UiState.Error(it.localizedMessage ?: "Search failed") }
             )
@@ -227,11 +431,19 @@ class NemoxViewModel(
             if (appId != null) {
                 val enriched = remoteRepo.getGameDetailsBySteamId(appId).getOrNull()
                 if (enriched != null) {
-                    _selectedCatalogPreview.value = enriched
+                    _selectedCatalogPreview.value = enriched.copy(
+                        trendingReasonEn = enriched.trendingReasonEn ?: item.trendingReasonEn,
+                        trendingReasonAr = enriched.trendingReasonAr ?: item.trendingReasonAr,
+                        trendingRank = enriched.trendingRank ?: item.trendingRank
+                    )
                 }
                 val news = runCatching { remoteRepo.getNewsForSteamApp(appId, item.title, 8) }
                     .getOrDefault(emptyList())
                 _selectedGameNews.value = news
+            } else if (item.title.contains("Minecraft", ignoreCase = true)) {
+                _selectedGameNews.value = runCatching { remoteRepo.getMojangMinecraftNews() }.getOrDefault(emptyList())
+            } else if (item.title.contains("Fortnite", ignoreCase = true)) {
+                _selectedGameNews.value = runCatching { remoteRepo.getFortniteOfficialNews() }.getOrDefault(emptyList())
             }
         }
     }
@@ -272,11 +484,17 @@ class NemoxViewModel(
                 communityUrl = item.communityUrl,
                 lastUpdatedAtMillis = System.currentTimeMillis()
             )
-            val res = firestoreRepo.addOrUpdateLibraryGame(currentUserId, libGame)
-            _actionMessage.value = if (res.isSuccess) {
-                "${item.title} added to library"
+            val ar = isArabicLocale()
+            if (isGuestMode || firestoreRepo == null) {
+                guestRepo.addOrUpdateLibraryGame(libGame)
+                _actionMessage.value = if (ar) "تم حفظ ${item.title} محلياً على جهازك" else "${item.title} saved locally"
             } else {
-                res.exceptionOrNull()?.localizedMessage ?: "Failed to add game"
+                val res = firestoreRepo.addOrUpdateLibraryGame(currentUserId, libGame)
+                _actionMessage.value = if (res.isSuccess) {
+                    if (ar) "تمت إضافة ${item.title} إلى مكتبتك" else "${item.title} added to library"
+                } else {
+                    res.exceptionOrNull()?.localizedMessage ?: if (ar) "فشلت إضافة اللعبة" else "Failed to add game"
+                }
             }
             refreshNews()
         }
@@ -305,31 +523,49 @@ class NemoxViewModel(
                 officialUrl = officialUrl?.takeIf { it.isNotBlank() },
                 lastUpdatedAtMillis = now
             )
-            val res = firestoreRepo.addOrUpdateLibraryGame(currentUserId, game)
-            _actionMessage.value = if (res.isSuccess) "${game.title} added" else "Failed to add game"
+            val ar = isArabicLocale()
+            if (isGuestMode || firestoreRepo == null) {
+                guestRepo.addOrUpdateLibraryGame(game)
+                _actionMessage.value = if (ar) "تم حفظ ${game.title} محلياً" else "${game.title} saved locally"
+            } else {
+                val res = firestoreRepo.addOrUpdateLibraryGame(currentUserId, game)
+                _actionMessage.value = if (res.isSuccess) {
+                    if (ar) "تمت إضافة ${game.title}" else "${game.title} added"
+                } else {
+                    if (ar) "فشلت إضافة اللعبة" else "Failed to add game"
+                }
+            }
         }
     }
 
     fun toggleFavorite(game: LibraryGame) {
         viewModelScope.launch {
-            firestoreRepo.updateLibraryGameFields(
-                currentUserId,
-                game.id,
-                mapOf("favorite" to !game.favorite)
-            )
+            if (isGuestMode || firestoreRepo == null) {
+                guestRepo.updateLibraryGameFields(game.id) { it.copy(favorite = !it.favorite) }
+            } else {
+                firestoreRepo.updateLibraryGameFields(
+                    currentUserId,
+                    game.id,
+                    mapOf("favorite" to !game.favorite)
+                )
+            }
         }
     }
 
     fun toggleNeedsUpdate(game: LibraryGame) {
         viewModelScope.launch {
-            firestoreRepo.updateLibraryGameFields(
-                currentUserId,
-                game.id,
-                mapOf(
-                    "needsUpdate" to !game.needsUpdate,
-                    "lastUpdatedAtMillis" to System.currentTimeMillis()
+            val now = System.currentTimeMillis()
+            if (isGuestMode || firestoreRepo == null) {
+                guestRepo.updateLibraryGameFields(game.id) {
+                    it.copy(needsUpdate = !it.needsUpdate, lastUpdatedAtMillis = now)
+                }
+            } else {
+                firestoreRepo.updateLibraryGameFields(
+                    currentUserId,
+                    game.id,
+                    mapOf("needsUpdate" to !game.needsUpdate, "lastUpdatedAtMillis" to now)
                 )
-            )
+            }
         }
     }
 
@@ -345,20 +581,36 @@ class NemoxViewModel(
     ) {
         viewModelScope.launch {
             val now = System.currentTimeMillis()
-            val fields = buildMap<String, Any> {
-                put("playHours", playHours.coerceAtLeast(0L))
-                put("playerLevel", playerLevel.coerceAtLeast(0L))
-                put("achievementsUnlocked", achievementsUnlocked.coerceAtLeast(0L))
-                put("achievementsTotal", achievementsTotal.coerceAtLeast(0L))
-                if (nextUpdateDateText.isNotBlank()) put("nextUpdateDateText", nextUpdateDateText.take(80))
-                if (currentSeasonName.isNotBlank()) put("currentSeasonName", currentSeasonName.take(120))
-                if (seasonDaysRemaining > 0) {
-                    put("seasonEndsAtMillis", now + seasonDaysRemaining * 86_400_000L)
+            if (isGuestMode || firestoreRepo == null) {
+                guestRepo.updateLibraryGameFields(game.id) { g ->
+                    g.copy(
+                        playHours = playHours.coerceAtLeast(0L),
+                        playerLevel = playerLevel.coerceAtLeast(0L),
+                        achievementsUnlocked = achievementsUnlocked.coerceAtLeast(0L),
+                        achievementsTotal = achievementsTotal.coerceAtLeast(0L),
+                        nextUpdateDateText = nextUpdateDateText.ifBlank { g.nextUpdateDateText },
+                        currentSeasonName = currentSeasonName.ifBlank { g.currentSeasonName },
+                        seasonEndsAtMillis = if (seasonDaysRemaining > 0) now + seasonDaysRemaining * 86_400_000L else g.seasonEndsAtMillis,
+                        lastUpdatedAtMillis = now
+                    )
                 }
-                put("lastUpdatedAtMillis", now)
+                _actionMessage.value = "Updated ${game.title}"
+            } else {
+                val fields = buildMap<String, Any> {
+                    put("playHours", playHours.coerceAtLeast(0L))
+                    put("playerLevel", playerLevel.coerceAtLeast(0L))
+                    put("achievementsUnlocked", achievementsUnlocked.coerceAtLeast(0L))
+                    put("achievementsTotal", achievementsTotal.coerceAtLeast(0L))
+                    if (nextUpdateDateText.isNotBlank()) put("nextUpdateDateText", nextUpdateDateText.take(80))
+                    if (currentSeasonName.isNotBlank()) put("currentSeasonName", currentSeasonName.take(120))
+                    if (seasonDaysRemaining > 0) {
+                        put("seasonEndsAtMillis", now + seasonDaysRemaining * 86_400_000L)
+                    }
+                    put("lastUpdatedAtMillis", now)
+                }
+                val res = firestoreRepo.updateLibraryGameFields(currentUserId, game.id, fields)
+                _actionMessage.value = if (res.isSuccess) "Updated ${game.title}" else "Update failed"
             }
-            val res = firestoreRepo.updateLibraryGameFields(currentUserId, game.id, fields)
-            _actionMessage.value = if (res.isSuccess) "Updated ${game.title}" else "Update failed"
         }
     }
 
@@ -370,26 +622,41 @@ class NemoxViewModel(
         notifyNews: Boolean
     ) {
         viewModelScope.launch {
-            firestoreRepo.updateLibraryGameFields(
-                currentUserId,
-                game.id,
-                mapOf(
-                    "notifyUpdates" to notifyUpdates,
-                    "notifySeasons" to notifySeasons,
-                    "notifyMissions" to notifyMissions,
-                    "notifyNews" to notifyNews
+            if (isGuestMode || firestoreRepo == null) {
+                guestRepo.updateLibraryGameFields(game.id) {
+                    it.copy(
+                        notifyUpdates = notifyUpdates,
+                        notifySeasons = notifySeasons,
+                        notifyMissions = notifyMissions,
+                        notifyNews = notifyNews
+                    )
+                }
+            } else {
+                firestoreRepo.updateLibraryGameFields(
+                    currentUserId,
+                    game.id,
+                    mapOf(
+                        "notifyUpdates" to notifyUpdates,
+                        "notifySeasons" to notifySeasons,
+                        "notifyMissions" to notifyMissions,
+                        "notifyNews" to notifyNews
+                    )
                 )
-            )
+            }
         }
     }
 
     fun removeGameFromLibrary(gameId: String) {
         viewModelScope.launch {
-            firestoreRepo.deleteLibraryGame(currentUserId, gameId)
+            if (isGuestMode || firestoreRepo == null) {
+                guestRepo.deleteLibraryGame(gameId)
+            } else {
+                firestoreRepo.deleteLibraryGame(currentUserId, gameId)
+            }
         }
     }
 
-    // --- GAME ACCOUNTS ---
+    // --- GAME ACCOUNTS (requires signed-in Google account) ---
     fun linkOrSyncAccount(
         gameKey: String,
         customGameName: String,
@@ -401,6 +668,16 @@ class NemoxViewModel(
         manualStats: String,
         existingId: String = ""
     ) {
+        val repo = firestoreRepo
+        val ar = isArabicLocale()
+        if (isGuestMode || repo == null) {
+            _actionMessage.value = if (ar) {
+                "سجّل الدخول بحساب Google لربط ومزامنة حسابات الألعاب."
+            } else {
+                "Sign in with Google to link & sync game accounts."
+            }
+            return
+        }
         viewModelScope.launch {
             _isSyncingAccount.value = true
             val spec = GameCatalogPresets.supportedAccountGames.firstOrNull { it.gameKey == gameKey }
@@ -428,7 +705,7 @@ class NemoxViewModel(
                 lastSyncedAtMillis = System.currentTimeMillis()
             )
 
-            val saveRes = firestoreRepo.upsertGameAccount(currentUserId, account)
+            val saveRes = repo.upsertGameAccount(currentUserId, account)
             _isSyncingAccount.value = false
 
             _actionMessage.value = when {
@@ -455,8 +732,9 @@ class NemoxViewModel(
     }
 
     fun deleteAccount(accountId: String) {
+        val repo = firestoreRepo ?: return
         viewModelScope.launch {
-            firestoreRepo.deleteGameAccount(currentUserId, accountId)
+            repo.deleteGameAccount(currentUserId, accountId)
         }
     }
 
@@ -486,8 +764,18 @@ class NemoxViewModel(
                 expiresAtMillis = expiresAt,
                 rewardText = rewardText?.trim()?.takeIf { it.isNotBlank() }
             )
-            val res = firestoreRepo.createMission(currentUserId, mission)
-            _actionMessage.value = if (res.isSuccess) "Mission added" else "Failed to add mission"
+            val ar = isArabicLocale()
+            if (isGuestMode || firestoreRepo == null) {
+                guestRepo.createMission(mission)
+                _actionMessage.value = if (ar) "تم حفظ المهمة محلياً" else "Mission saved locally"
+            } else {
+                val res = firestoreRepo.createMission(currentUserId, mission)
+                _actionMessage.value = if (res.isSuccess) {
+                    if (ar) "تمت إضافة المهمة" else "Mission added"
+                } else {
+                    if (ar) "فشلت إضافة المهمة" else "Failed to add mission"
+                }
+            }
         }
     }
 
@@ -495,7 +783,11 @@ class NemoxViewModel(
         viewModelScope.launch {
             val next = (mission.currentProgress + 1L).coerceAtMost(mission.targetProgress)
             val done = next >= mission.targetProgress
-            firestoreRepo.updateMissionProgress(currentUserId, mission.id, next, done)
+            if (isGuestMode || firestoreRepo == null) {
+                guestRepo.updateMissionProgress(mission.id, next, done)
+            } else {
+                firestoreRepo.updateMissionProgress(currentUserId, mission.id, next, done)
+            }
         }
     }
 
@@ -503,13 +795,21 @@ class NemoxViewModel(
         viewModelScope.launch {
             val nextDone = !mission.completed
             val nextProg = if (nextDone) mission.targetProgress else mission.currentProgress.coerceAtMost(mission.targetProgress - 1L).coerceAtLeast(0L)
-            firestoreRepo.updateMissionProgress(currentUserId, mission.id, nextProg, nextDone)
+            if (isGuestMode || firestoreRepo == null) {
+                guestRepo.updateMissionProgress(mission.id, nextProg, nextDone)
+            } else {
+                firestoreRepo.updateMissionProgress(currentUserId, mission.id, nextProg, nextDone)
+            }
         }
     }
 
     fun deleteMission(missionId: String) {
         viewModelScope.launch {
-            firestoreRepo.deleteMission(currentUserId, missionId)
+            if (isGuestMode || firestoreRepo == null) {
+                guestRepo.deleteMission(missionId)
+            } else {
+                firestoreRepo.deleteMission(currentUserId, missionId)
+            }
         }
     }
 
@@ -534,20 +834,38 @@ class NemoxViewModel(
                 steamAppId = item.steamAppId,
                 trailerUrl = item.trailerUrl
             )
-            val res = firestoreRepo.addToWaitlist(currentUserId, waitlistGame)
-            _actionMessage.value = if (res.isSuccess) "${item.title} added to Waitlist" else "Failed to add to Waitlist"
+            val ar = isArabicLocale()
+            if (isGuestMode || firestoreRepo == null) {
+                guestRepo.addToWaitlist(waitlistGame)
+                _actionMessage.value = if (ar) "تم حفظ ${item.title} في قائمة الانتظار المحلية" else "${item.title} saved to local waitlist"
+            } else {
+                val res = firestoreRepo.addToWaitlist(currentUserId, waitlistGame)
+                _actionMessage.value = if (res.isSuccess) {
+                    if (ar) "تمت إضافة ${item.title} لقائمة الانتظار" else "${item.title} added to Waitlist"
+                } else {
+                    if (ar) "فشلت الإضافة لقائمة الانتظار" else "Failed to add to Waitlist"
+                }
+            }
         }
     }
 
     fun toggleWaitlistAlert(item: WaitlistGame, beforeRelease: Boolean, onRelease: Boolean) {
         viewModelScope.launch {
-            firestoreRepo.updateWaitlistNotifications(currentUserId, item.id, beforeRelease, onRelease)
+            if (isGuestMode || firestoreRepo == null) {
+                guestRepo.updateWaitlistAlerts(item.id, beforeRelease, onRelease)
+            } else {
+                firestoreRepo.updateWaitlistNotifications(currentUserId, item.id, beforeRelease, onRelease)
+            }
         }
     }
 
     fun removeFromWaitlist(waitlistId: String) {
         viewModelScope.launch {
-            firestoreRepo.removeFromWaitlist(currentUserId, waitlistId)
+            if (isGuestMode || firestoreRepo == null) {
+                guestRepo.removeFromWaitlist(waitlistId)
+            } else {
+                firestoreRepo.removeFromWaitlist(currentUserId, waitlistId)
+            }
         }
     }
 
@@ -555,14 +873,18 @@ class NemoxViewModel(
     fun setLanguage(code: String) {
         viewModelScope.launch {
             settingsDataStore.setLanguage(code)
-            firestoreRepo.updateUserPreferences(currentUserId, mapOf("preferredLanguage" to code))
+            if (!isGuestMode) {
+                firestoreRepo?.updateUserPreferences(currentUserId, mapOf("preferredLanguage" to code))
+            }
         }
     }
 
     fun setDarkMode(enabled: Boolean) {
         viewModelScope.launch {
             settingsDataStore.setDarkMode(enabled)
-            firestoreRepo.updateUserPreferences(currentUserId, mapOf("darkMode" to enabled))
+            if (!isGuestMode) {
+                firestoreRepo?.updateUserPreferences(currentUserId, mapOf("darkMode" to enabled))
+            }
         }
     }
 
@@ -574,8 +896,10 @@ class NemoxViewModel(
         upcoming: Boolean,
         news: Boolean
     ) {
+        val repo = firestoreRepo
+        if (isGuestMode || repo == null) return
         viewModelScope.launch {
-            firestoreRepo.updateUserPreferences(
+            repo.updateUserPreferences(
                 currentUserId,
                 mapOf(
                     "notificationsEnabled" to master,
@@ -591,23 +915,35 @@ class NemoxViewModel(
 
     fun markNotificationRead(notifId: String) {
         viewModelScope.launch {
-            firestoreRepo.markNotificationRead(currentUserId, notifId)
+            if (isGuestMode || firestoreRepo == null) {
+                guestRepo.markNotificationRead(notifId)
+            } else {
+                firestoreRepo.markNotificationRead(currentUserId, notifId)
+            }
         }
     }
 
     fun markAllNotificationsRead() {
         viewModelScope.launch {
-            val current = (notifications.value as? UiState.Success)?.data.orEmpty()
-            val unread = current.filter { !it.read }.map { it.id }
-            if (unread.isNotEmpty()) {
-                firestoreRepo.markAllNotificationsRead(currentUserId, unread)
+            if (isGuestMode || firestoreRepo == null) {
+                guestRepo.markAllNotificationsRead()
+            } else {
+                val current = (notifications.value as? UiState.Success)?.data.orEmpty()
+                val unread = current.filter { !it.read }.map { it.id }
+                if (unread.isNotEmpty()) {
+                    firestoreRepo.markAllNotificationsRead(currentUserId, unread)
+                }
             }
         }
     }
 
     fun deleteNotification(notifId: String) {
         viewModelScope.launch {
-            firestoreRepo.deleteNotification(currentUserId, notifId)
+            if (isGuestMode || firestoreRepo == null) {
+                guestRepo.deleteNotification(notifId)
+            } else {
+                firestoreRepo.deleteNotification(currentUserId, notifId)
+            }
         }
     }
 
@@ -619,89 +955,94 @@ class NemoxViewModel(
             val currentWaitlist = (waitlist.value as? UiState.Success)?.data.orEmpty()
             var createdCount = 0
 
+            suspend fun createNotif(key: String, notif: UserNotification): Boolean {
+                return if (isGuestMode || firestoreRepo == null) {
+                    guestRepo.createNotificationIfMissing(key, notif)
+                } else {
+                    firestoreRepo.createNotificationIfMissing(currentUserId, key, notif).getOrDefault(false)
+                }
+            }
+
             for (m in currentMissions) {
                 if (!m.completed && m.expiresAtMillis > now && m.expiresAtMillis - now <= 12 * 3_600_000L) {
                     val key = "scan_mission_${m.id}_${m.expiresAtMillis / 3_600_000L}"
-                    val res = firestoreRepo.createNotificationIfMissing(
-                        currentUserId,
-                        key,
-                        UserNotification(
-                            userId = currentUserId,
-                            type = NotificationType.MISSION_EXPIRING.name,
-                            title = "Mission Expiring: ${m.gameName}",
-                            body = "${m.title} (${m.currentProgress}/${m.targetProgress})",
-                            gameName = m.gameName,
-                            read = false,
-                            createdAtMillis = now
+                    if (createNotif(
+                            key,
+                            UserNotification(
+                                userId = currentUserId,
+                                type = NotificationType.MISSION_EXPIRING.name,
+                                title = "Mission Expiring: ${m.gameName}",
+                                body = "${m.title} (${m.currentProgress}/${m.targetProgress})",
+                                gameName = m.gameName,
+                                read = false,
+                                createdAtMillis = now
+                            )
                         )
-                    )
-                    if (res.getOrDefault(false)) createdCount++
+                    ) createdCount++
                 }
             }
 
             for (g in currentGames) {
                 if (g.needsUpdate && g.notifyUpdates) {
                     val key = "scan_update_${g.id}_${g.lastUpdatedAtMillis / 86_400_000L}"
-                    val res = firestoreRepo.createNotificationIfMissing(
-                        currentUserId,
-                        key,
-                        UserNotification(
-                            userId = currentUserId,
-                            type = NotificationType.UPDATE_RELEASED.name,
-                            title = "Update Ready: ${g.title}",
-                            body = g.updateNotes?.ifBlank { "A new update is pending for ${g.title}." }
-                                ?: "A new update is pending for ${g.title}.",
-                            gameName = g.title,
-                            read = false,
-                            createdAtMillis = now
+                    if (createNotif(
+                            key,
+                            UserNotification(
+                                userId = currentUserId,
+                                type = NotificationType.UPDATE_RELEASED.name,
+                                title = "Update Ready: ${g.title}",
+                                body = g.updateNotes?.ifBlank { "A new update is pending for ${g.title}." }
+                                    ?: "A new update is pending for ${g.title}.",
+                                gameName = g.title,
+                                read = false,
+                                createdAtMillis = now
+                            )
                         )
-                    )
-                    if (res.getOrDefault(false)) createdCount++
+                    ) createdCount++
                 }
                 val sEnd = g.seasonEndsAtMillis ?: 0L
                 if (g.notifySeasons && sEnd > now && sEnd - now <= 72 * 3_600_000L) {
                     val key = "scan_season_${g.id}_${sEnd / 86_400_000L}"
-                    val res = firestoreRepo.createNotificationIfMissing(
-                        currentUserId,
-                        key,
-                        UserNotification(
-                            userId = currentUserId,
-                            type = NotificationType.SEASON_ENDING.name,
-                            title = "Season Ending: ${g.title}",
-                            body = "${g.currentSeasonName ?: "Current Season"} ends soon.",
-                            gameName = g.title,
-                            read = false,
-                            createdAtMillis = now
+                    if (createNotif(
+                            key,
+                            UserNotification(
+                                userId = currentUserId,
+                                type = NotificationType.SEASON_ENDING.name,
+                                title = "Season Ending: ${g.title}",
+                                body = "${g.currentSeasonName ?: "Current Season"} ends soon.",
+                                gameName = g.title,
+                                read = false,
+                                createdAtMillis = now
+                            )
                         )
-                    )
-                    if (res.getOrDefault(false)) createdCount++
+                    ) createdCount++
                 }
             }
 
             for (w in currentWaitlist) {
                 if (w.notifyBeforeRelease && w.releaseTimestampMillis > now && w.releaseTimestampMillis - now <= 7L * 86_400_000L) {
                     val key = "scan_wait_${w.id}"
-                    val res = firestoreRepo.createNotificationIfMissing(
-                        currentUserId,
-                        key,
-                        UserNotification(
-                            userId = currentUserId,
-                            type = NotificationType.WAITLIST_RELEASE.name,
-                            title = "Releasing Soon: ${w.title}",
-                            body = "Expected release: ${w.releaseDateText}",
-                            gameName = w.title,
-                            read = false,
-                            createdAtMillis = now
+                    if (createNotif(
+                            key,
+                            UserNotification(
+                                userId = currentUserId,
+                                type = NotificationType.WAITLIST_RELEASE.name,
+                                title = "Releasing Soon: ${w.title}",
+                                body = "Expected release: ${w.releaseDateText}",
+                                gameName = w.title,
+                                read = false,
+                                createdAtMillis = now
+                            )
                         )
-                    )
-                    if (res.getOrDefault(false)) createdCount++
+                    ) createdCount++
                 }
             }
 
+            val ar = isArabicLocale()
             _actionMessage.value = if (createdCount > 0) {
-                "$createdCount new alerts added"
+                if (ar) "تمت إضافة $createdCount تنبيهات جديدة" else "$createdCount new alerts added"
             } else {
-                "No new urgent alerts found"
+                if (ar) "لا توجد تنبيهات عاجلة جديدة حالياً" else "No new urgent alerts found"
             }
         }
     }

@@ -5,6 +5,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -22,7 +24,10 @@ import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.icons.rounded.AccountTree
 import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.DoneAll
+import androidx.compose.material.icons.rounded.Event
 import androidx.compose.material.icons.rounded.Flag
+import androidx.compose.material.icons.rounded.LocalFireDepartment
+import androidx.compose.material.icons.rounded.Newspaper
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.Refresh
@@ -32,6 +37,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -56,20 +62,26 @@ import com.example.ui.components.StatusBadge
 import com.example.ui.components.formatPublishDate
 import com.example.viewmodel.UiState
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ProfileSettingsScreen(
     displayName: String,
     email: String?,
     photoUrl: String?,
+    isGuestMode: Boolean = false,
     profileState: UiState<UserProfile?>,
     currentLanguage: String,
     darkMode: Boolean,
     accountsCount: Int,
     missionsCount: Int,
     unreadNotifCount: Int,
+    onSignInWithGoogle: () -> Unit = {},
     onOpenAccounts: () -> Unit,
     onOpenMissions: () -> Unit,
     onOpenNotifications: () -> Unit,
+    onOpenNews: () -> Unit = {},
+    onOpenUpcoming: () -> Unit = {},
+    onOpenTrending: () -> Unit = {},
     onLanguageSelected: (String) -> Unit,
     onDarkModeChanged: (Boolean) -> Unit,
     onUpdateGlobalNotifs: (Boolean, Boolean, Boolean, Boolean, Boolean, Boolean) -> Unit,
@@ -84,7 +96,9 @@ fun ProfileSettingsScreen(
     val notifNews = profile?.notifyOnNews ?: true
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .testTag("profile_settings_list"),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -111,7 +125,14 @@ fun ProfileSettingsScreen(
                     }
                     Column(modifier = Modifier.weight(1f)) {
                         Text(displayName, style = MaterialTheme.typography.titleLarge)
-                        if (!email.isNullOrBlank()) {
+                        if (isGuestMode) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            StatusBadge(
+                                text = stringResource(R.string.guest_mode_label),
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        } else if (!email.isNullOrBlank()) {
                             Text(
                                 text = email,
                                 style = MaterialTheme.typography.bodyMedium,
@@ -123,33 +144,72 @@ fun ProfileSettingsScreen(
             }
         }
 
-        // Hub Shortcuts (Accounts, Missions, Notifications)
+        if (isGuestMode) {
+            item {
+                Button(
+                    onClick = onSignInWithGoogle,
+                    modifier = Modifier.fillMaxWidth().height(50.dp).testTag("profile_google_signin_button")
+                ) {
+                    Text(stringResource(R.string.auth_sign_in_google))
+                }
+            }
+        }
+
+        // Hub Shortcuts (Accounts, Missions, Notifications + News, Upcoming, Trending)
         item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                HubShortcutCard(
-                    icon = Icons.Rounded.AccountTree,
-                    title = stringResource(R.string.accounts_title),
-                    badge = accountsCount.toString(),
-                    onClick = onOpenAccounts,
-                    modifier = Modifier.weight(1f).testTag("shortcut_accounts")
-                )
-                HubShortcutCard(
-                    icon = Icons.Rounded.Flag,
-                    title = stringResource(R.string.missions_title),
-                    badge = missionsCount.toString(),
-                    onClick = onOpenMissions,
-                    modifier = Modifier.weight(1f).testTag("shortcut_missions")
-                )
-                HubShortcutCard(
-                    icon = Icons.Rounded.Notifications,
-                    title = stringResource(R.string.notifications_title),
-                    badge = unreadNotifCount.toString(),
-                    onClick = onOpenNotifications,
-                    modifier = Modifier.weight(1f).testTag("shortcut_notifications")
-                )
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    HubShortcutCard(
+                        icon = Icons.Rounded.AccountTree,
+                        title = stringResource(R.string.accounts_title),
+                        badge = accountsCount.toString(),
+                        onClick = onOpenAccounts,
+                        modifier = Modifier.weight(1f).testTag("shortcut_accounts")
+                    )
+                    HubShortcutCard(
+                        icon = Icons.Rounded.Flag,
+                        title = stringResource(R.string.missions_title),
+                        badge = missionsCount.toString(),
+                        onClick = onOpenMissions,
+                        modifier = Modifier.weight(1f).testTag("shortcut_missions")
+                    )
+                    HubShortcutCard(
+                        icon = Icons.Rounded.Notifications,
+                        title = stringResource(R.string.notifications_title),
+                        badge = unreadNotifCount.toString(),
+                        onClick = onOpenNotifications,
+                        modifier = Modifier.weight(1f).testTag("shortcut_notifications")
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    HubShortcutCard(
+                        icon = Icons.Rounded.Newspaper,
+                        title = stringResource(R.string.nav_news),
+                        badge = "Live",
+                        onClick = onOpenNews,
+                        modifier = Modifier.weight(1f).testTag("shortcut_news")
+                    )
+                    HubShortcutCard(
+                        icon = Icons.Rounded.Event,
+                        title = stringResource(R.string.nav_upcoming),
+                        badge = "Soon",
+                        onClick = onOpenUpcoming,
+                        modifier = Modifier.weight(1f).testTag("shortcut_upcoming")
+                    )
+                    HubShortcutCard(
+                        icon = Icons.Rounded.LocalFireDepartment,
+                        title = stringResource(R.string.nav_trending),
+                        badge = "Top",
+                        onClick = onOpenTrending,
+                        modifier = Modifier.weight(1f).testTag("shortcut_trending")
+                    )
+                }
             }
         }
 
@@ -159,28 +219,50 @@ fun ProfileSettingsScreen(
             Spacer(modifier = Modifier.height(8.dp))
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                modifier = Modifier.fillMaxWidth()
+                shape = MaterialTheme.shapes.large,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.55f), MaterialTheme.shapes.large)
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(stringResource(R.string.language_label), style = MaterialTheme.typography.titleSmall)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    val chipColors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.primary,
+                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         FilterChip(
-                            selected = currentLanguage == "system",
-                            onClick = { onLanguageSelected("system") },
-                            label = { Text(stringResource(R.string.lang_system)) },
-                            modifier = Modifier.testTag("settings_lang_system")
+                            selected = currentLanguage == "ar",
+                            onClick = { onLanguageSelected("ar") },
+                            label = { Text(stringResource(R.string.lang_ar)) },
+                            colors = chipColors,
+                            modifier = Modifier.testTag("settings_lang_ar")
                         )
                         FilterChip(
                             selected = currentLanguage == "en",
                             onClick = { onLanguageSelected("en") },
                             label = { Text(stringResource(R.string.lang_en)) },
+                            colors = chipColors,
                             modifier = Modifier.testTag("settings_lang_en")
                         )
                         FilterChip(
-                            selected = currentLanguage == "ar",
-                            onClick = { onLanguageSelected("ar") },
-                            label = { Text(stringResource(R.string.lang_ar)) },
-                            modifier = Modifier.testTag("settings_lang_ar")
+                            selected = currentLanguage == "tr",
+                            onClick = { onLanguageSelected("tr") },
+                            label = { Text(stringResource(R.string.lang_tr)) },
+                            colors = chipColors,
+                            modifier = Modifier.testTag("settings_lang_tr")
+                        )
+                        FilterChip(
+                            selected = currentLanguage == "system",
+                            onClick = { onLanguageSelected("system") },
+                            label = { Text(stringResource(R.string.lang_system)) },
+                            colors = chipColors,
+                            modifier = Modifier.testTag("settings_lang_system")
                         )
                     }
 
@@ -231,7 +313,7 @@ fun ProfileSettingsScreen(
             }
         }
 
-        // Sign Out
+        // Sign Out / Exit Guest Mode
         item {
             Button(
                 onClick = onSignOut,
@@ -246,7 +328,10 @@ fun ProfileSettingsScreen(
             ) {
                 Icon(Icons.AutoMirrored.Rounded.Logout, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(R.string.auth_sign_out))
+                Text(
+                    if (isGuestMode) stringResource(R.string.guest_exit_label)
+                    else stringResource(R.string.auth_sign_out)
+                )
             }
             Spacer(modifier = Modifier.height(24.dp))
         }

@@ -22,62 +22,67 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import java.util.Locale
 
-private val NemoxDarkColorScheme = darkColorScheme(
-    primary = NeonGreen,
-    onPrimary = ObsidianBg,
-    primaryContainer = NeonGreenContainer,
-    onPrimaryContainer = NeonGreen,
-    secondary = ElectricBlue,
-    onSecondary = ObsidianBg,
-    secondaryContainer = ElectricBlueContainer,
-    onSecondaryContainer = ElectricBlue,
-    tertiary = CyberAmber,
-    onTertiary = ObsidianBg,
-    tertiaryContainer = CyberAmberContainer,
-    onTertiaryContainer = CyberAmber,
-    background = ObsidianBg,
-    onBackground = TextPrimaryDark,
-    surface = ObsidianSurface,
-    onSurface = TextPrimaryDark,
-    surfaceVariant = ObsidianSurfaceElevated,
-    onSurfaceVariant = TextSecondaryDark,
-    surfaceContainerLow = ObsidianSurface,
-    surfaceContainer = ObsidianSurfaceElevated,
-    surfaceContainerHigh = ObsidianSurfaceHighest,
-    outline = ObsidianOutline,
-    error = CyberRed,
-    onError = Color.White,
-    errorContainer = CyberRedContainer,
-    onErrorContainer = CyberRed
+private val ZyvoraDarkColorScheme = darkColorScheme(
+    primary = ZyvoraVioletPrimary,
+    onPrimary = ZyvoraTextLight,
+    primaryContainer = ZyvoraVioletContainer,
+    onPrimaryContainer = ZyvoraLuminousViolet,
+    secondary = ZyvoraLuminousViolet,
+    onSecondary = ZyvoraVoidBg,
+    secondaryContainer = ZyvoraLuminousContainer,
+    onSecondaryContainer = ZyvoraTextLight,
+    tertiary = ZyvoraAmber,
+    onTertiary = ZyvoraVoidBg,
+    tertiaryContainer = ZyvoraAmberContainer,
+    onTertiaryContainer = ZyvoraAmber,
+    background = ZyvoraVoidBg,
+    onBackground = ZyvoraTextLight,
+    surface = ZyvoraCardBg,
+    onSurface = ZyvoraTextLight,
+    surfaceVariant = ZyvoraCardElevated,
+    onSurfaceVariant = ZyvoraTextMuted,
+    surfaceContainerLowest = ZyvoraVoidBg,
+    surfaceContainerLow = ZyvoraNavSurface,
+    surfaceContainer = ZyvoraCardBg,
+    surfaceContainerHigh = ZyvoraCardElevated,
+    surfaceContainerHighest = ZyvoraCardHighest,
+    outline = ZyvoraOutline,
+    outlineVariant = ZyvoraOutline.copy(alpha = 0.55f),
+    error = ZyvoraError,
+    onError = ZyvoraVoidBg,
+    errorContainer = ZyvoraErrorContainer,
+    onErrorContainer = ZyvoraError
 )
 
-private val NemoxLightColorScheme = lightColorScheme(
+private val ZyvoraLightColorScheme = lightColorScheme(
     primary = LightPrimary,
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFD0F5E3),
-    onPrimaryContainer = Color(0xFF00381C),
+    primaryContainer = Color(0xFFEDE2FF),
+    onPrimaryContainer = Color(0xFF280B57),
     secondary = LightSecondary,
     onSecondary = Color.White,
-    secondaryContainer = Color(0xFFD1F1FF),
-    onSecondaryContainer = Color(0xFF003547),
-    tertiary = CyberAmber,
-    onTertiary = ObsidianBg,
+    secondaryContainer = Color(0xFFE4D5FC),
+    onSecondaryContainer = Color(0xFF25133D),
+    tertiary = ZyvoraAmber,
+    onTertiary = ZyvoraVoidBg,
     background = LightBg,
     onBackground = TextPrimaryLight,
     surface = LightSurface,
     onSurface = TextPrimaryLight,
     surfaceVariant = LightSurfaceVariant,
     onSurfaceVariant = TextSecondaryLight,
-    outline = Color(0xFFCBD5E1),
-    error = CyberRed,
+    surfaceContainerLow = LightSurface,
+    surfaceContainer = LightSurfaceVariant,
+    outline = LightOutline,
+    error = ZyvoraError,
     onError = Color.White
 )
 
-val NemoxShapes = Shapes(
-    small = RoundedCornerShape(10.dp),
-    medium = RoundedCornerShape(16.dp),
-    large = RoundedCornerShape(22.dp),
-    extraLarge = RoundedCornerShape(28.dp)
+val ZyvoraShapes = Shapes(
+    small = RoundedCornerShape(12.dp),
+    medium = RoundedCornerShape(18.dp),
+    large = RoundedCornerShape(24.dp),
+    extraLarge = RoundedCornerShape(30.dp)
 )
 
 tailrec fun Context.findActivity(): Activity? = when (this) {
@@ -87,19 +92,22 @@ tailrec fun Context.findActivity(): Activity? = when (this) {
 }
 
 @Composable
-fun NEMOxTheme(
+fun ZyvoraTheme(
     darkTheme: Boolean = true,
-    languageCode: String = "system",
+    languageCode: String = "ar",
     content: @Composable () -> Unit
 ) {
     val baseContext = LocalContext.current
     val resolvedLocale = remember(languageCode) {
         when (languageCode) {
-            "ar" -> Locale("ar")
             "en" -> Locale("en")
-            else -> Locale.getDefault()
+            "tr" -> Locale("tr")
+            "system" -> Locale.getDefault()
+            else -> Locale("ar")
         }
     }
+
+    val isArabic = resolvedLocale.language == "ar"
 
     val localizedConfig = remember(baseContext, resolvedLocale) {
         Configuration(baseContext.resources.configuration).apply {
@@ -123,7 +131,8 @@ fun NEMOxTheme(
         }
     }
 
-    val colorScheme = if (darkTheme) NemoxDarkColorScheme else NemoxLightColorScheme
+    val colorScheme = if (darkTheme) ZyvoraDarkColorScheme else ZyvoraLightColorScheme
+    val typography = remember(isArabic) { zyvoraTypography(isArabic = isArabic) }
 
     CompositionLocalProvider(
         LocalContext provides wrappedContext,
@@ -132,9 +141,16 @@ fun NEMOxTheme(
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
-            typography = NemoxTypography,
-            shapes = NemoxShapes,
+            typography = typography,
+            shapes = ZyvoraShapes,
             content = content
         )
     }
 }
+
+@Composable
+fun NEMOxTheme(
+    darkTheme: Boolean = true,
+    languageCode: String = "ar",
+    content: @Composable () -> Unit
+) = ZyvoraTheme(darkTheme = darkTheme, languageCode = languageCode, content = content)

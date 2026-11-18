@@ -1,11 +1,14 @@
 package com.example.auth
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -19,11 +22,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountTree
+import androidx.compose.material.icons.rounded.Explore
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Newspaper
 import androidx.compose.material.icons.rounded.Security
@@ -34,9 +37,10 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -61,12 +65,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.credentials.CredentialManager
 import com.example.R
+import com.example.ui.components.ZyvoraBrandLockup
+import com.example.ui.theme.ZyvoraLuminousViolet
+import com.example.ui.theme.ZyvoraVioletPrimary
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AuthScreen(
     currentLanguage: String,
     onLanguageSelected: (String) -> Unit,
-    onAuthSuccess: () -> Unit
+    onAuthSuccess: () -> Unit,
+    onContinueAsGuest: () -> Unit
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -90,12 +99,12 @@ fun AuthScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Atmospheric cyber hero backdrop
+        // ZYVORA Violet Portal Hero Backdrop
         Image(
-            painter = painterResource(id = R.drawable.img_nemox_hero),
+            painter = painterResource(id = R.drawable.img_zyvora_hero),
             contentDescription = null,
             contentScale = ContentScale.Crop,
-            alpha = 0.28f,
+            alpha = 0.34f,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(340.dp)
@@ -107,7 +116,8 @@ fun AuthScreen(
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
-                            Color.Transparent,
+                            ZyvoraVioletPrimary.copy(alpha = 0.14f),
+                            MaterialTheme.colorScheme.background.copy(alpha = 0.72f),
                             MaterialTheme.colorScheme.background
                         )
                     )
@@ -122,73 +132,65 @@ fun AuthScreen(
                 .padding(horizontal = 20.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Top Language Toggle Pill
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically
+            // Responsive 3-Language Selector (AR default, EN, TR)
+            val chipColors = FilterChipDefaults.filterChipColors(
+                selectedContainerColor = MaterialTheme.colorScheme.primary,
+                selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            FlowRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = 560.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.End),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Rounded.Language,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.secondary,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
+                Box(
+                    modifier = Modifier.height(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Language,
+                        contentDescription = stringResource(R.string.language_label),
+                        tint = MaterialTheme.colorScheme.secondary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
                 FilterChip(
-                    selected = currentLanguage == "ar",
+                    selected = currentLanguage == "ar" || currentLanguage == "system",
                     onClick = { onLanguageSelected("ar") },
                     label = { Text("العربية") },
+                    colors = chipColors,
                     modifier = Modifier.testTag("auth_lang_ar")
                 )
-                Spacer(modifier = Modifier.width(6.dp))
                 FilterChip(
                     selected = currentLanguage == "en",
                     onClick = { onLanguageSelected("en") },
                     label = { Text("EN") },
+                    colors = chipColors,
                     modifier = Modifier.testTag("auth_lang_en")
                 )
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // NEMOx Emblem
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.surface,
-                modifier = Modifier
-                    .size(92.dp)
-                    .border(
-                        width = 2.dp,
-                        brush = Brush.linearGradient(
-                            listOf(
-                                MaterialTheme.colorScheme.primary,
-                                MaterialTheme.colorScheme.secondary
-                            )
-                        ),
-                        shape = CircleShape
-                    )
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.img_nemox_icon),
-                    contentDescription = stringResource(R.string.app_name),
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(CircleShape)
+                FilterChip(
+                    selected = currentLanguage == "tr",
+                    onClick = { onLanguageSelected("tr") },
+                    label = { Text("TR") },
+                    colors = chipColors,
+                    modifier = Modifier.testTag("auth_lang_tr")
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(18.dp))
 
-            Text(
-                text = stringResource(R.string.auth_title),
-                style = MaterialTheme.typography.headlineLarge,
-                color = MaterialTheme.colorScheme.onBackground,
-                textAlign = TextAlign.Center
+            // Standalone Geometric Z-Portal Mark + ZYVORA Wordmark + Tagline
+            ZyvoraBrandLockup(
+                markSize = 84.dp,
+                vertical = true,
+                tagline = stringResource(R.string.brand_tagline),
+                modifier = Modifier.testTag("auth_brand_lockup")
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             Text(
                 text = stringResource(R.string.auth_subtitle),
@@ -198,21 +200,26 @@ fun AuthScreen(
                 modifier = Modifier.widthIn(max = 520.dp)
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(22.dp))
 
-            // Highlights Card
+            // Highlights Card (#25133D surface with luminous violet border accent)
             Card(
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f)
                 ),
                 shape = MaterialTheme.shapes.large,
                 modifier = Modifier
                     .fillMaxWidth()
                     .widthIn(max = 520.dp)
                     .border(
-                        1.dp,
-                        MaterialTheme.colorScheme.outline.copy(alpha = 0.6f),
-                        MaterialTheme.shapes.large
+                        width = 1.dp,
+                        brush = Brush.linearGradient(
+                            colors = listOf(
+                                ZyvoraLuminousViolet.copy(alpha = 0.45f),
+                                ZyvoraVioletPrimary.copy(alpha = 0.35f)
+                            )
+                        ),
+                        shape = MaterialTheme.shapes.large
                     )
             ) {
                 Column(
@@ -221,12 +228,12 @@ fun AuthScreen(
                 ) {
                     AuthFeatureRow(
                         icon = Icons.Rounded.SportsEsports,
-                        tint = MaterialTheme.colorScheme.primary,
+                        tint = MaterialTheme.colorScheme.secondary,
                         text = stringResource(R.string.auth_feature_library)
                     )
                     AuthFeatureRow(
                         icon = Icons.Rounded.AccountTree,
-                        tint = MaterialTheme.colorScheme.secondary,
+                        tint = MaterialTheme.colorScheme.primary,
                         text = stringResource(R.string.auth_feature_accounts)
                     )
                     AuthFeatureRow(
@@ -237,7 +244,7 @@ fun AuthScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             if (errorMessage != null) {
                 Card(
@@ -306,6 +313,51 @@ fun AuthScreen(
                 }
             }
 
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Prominent Guest Mode button
+            OutlinedButton(
+                onClick = onContinueAsGuest,
+                enabled = !isLoading,
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(
+                    width = 1.5.dp,
+                    color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.72f)
+                ),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.55f),
+                    contentColor = MaterialTheme.colorScheme.secondary
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = 520.dp)
+                    .height(52.dp)
+                    .testTag("guest_sign_in_button")
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Explore,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.secondary
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = stringResource(R.string.auth_continue_guest),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Text(
+                text = stringResource(R.string.auth_guest_note),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.widthIn(max = 500.dp)
+            )
+
             Spacer(modifier = Modifier.height(14.dp))
 
             Row(
@@ -316,7 +368,7 @@ fun AuthScreen(
                 Icon(
                     imageVector = Icons.Rounded.Security,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = MaterialTheme.colorScheme.secondary,
                     modifier = Modifier.size(16.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
@@ -346,7 +398,7 @@ private fun AuthFeatureRow(
             modifier = Modifier
                 .size(38.dp)
                 .clip(RoundedCornerShape(10.dp))
-                .background(tint.copy(alpha = 0.14f))
+                .background(tint.copy(alpha = 0.16f))
         ) {
             Icon(
                 imageVector = icon,

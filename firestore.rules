@@ -50,7 +50,7 @@ service cloud.firestore {
         isValidString(data.displayName, 1, 80) &&
         isOptionalString(data, 'email', 120) &&
         isOptionalString(data, 'photoUrl', 500) &&
-        data.preferredLanguage in ['system', 'en', 'ar'] &&
+        data.preferredLanguage in ['system', 'en', 'ar', 'tr'] &&
         data.darkMode is bool &&
         data.notificationsEnabled is bool &&
         (!('notifyOnUpdates' in data) || data.notifyOnUpdates is bool) &&

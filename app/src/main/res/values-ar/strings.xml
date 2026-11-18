@@ -1,26 +1,70 @@
 <resources>
-    <string name="app_name">NEMOx</string>
+    <string name="app_name">ZYVORA</string>
+    <string name="brand_tagline">عالمك، ألعابك، مجتمعك.</string>
+    <string name="splash_entering">جارٍ الدخول إلى بوابة الألعاب…</string>
 
     <!-- Navigation -->
     <string name="nav_home">الرئيسية</string>
+    <string name="nav_discover">اكتشف</string>
+    <string name="nav_search">ابحث</string>
     <string name="nav_my_games">ألعابي</string>
     <string name="nav_news">الأخبار</string>
     <string name="nav_upcoming">القادمة</string>
+    <string name="nav_trending">الأكثر رواجاً</string>
     <string name="nav_profile">حسابي</string>
 
-    <!-- Auth -->
-    <string name="auth_title">مركز ألعاب NEMOx</string>
-    <string name="auth_subtitle">منصتك الشاملة لإدارة مكتبة ألعابك، متابعة التحديثات الرسمية، ربط حسابات الألعاب، تتبع المهام، واكتشاف الإصدارات القادمة.</string>
+    <!-- Auth & Guest Mode -->
+    <string name="auth_title">ZYVORA</string>
+    <string name="auth_subtitle">بوابتك العالمية لاكتشاف الألعاب، متابعة التحديثات الرسمية، ربط حسابات الألعاب، تتبع المهام، واستكشاف الإصدارات القادمة.</string>
     <string name="auth_sign_in_google">تسجيل الدخول عبر Google</string>
+    <string name="auth_continue_guest">الدخول كزائر</string>
+    <string name="auth_guest_note">تصفح الألعاب والأكثر رواجاً والأخبار والقادمة واحفظ مكتبتك محلياً على جهازك دون إنشاء حساب.</string>
     <string name="auth_security_note">محمي عبر مصادقة Google. لا نطلب ولا نخزن كلمات مرور حسابات ألعابك إطلاقاً.</string>
     <string name="auth_feature_library">تابع جميع ألعابك وتحديثاتها ومواسمها</string>
     <string name="auth_feature_accounts">اربط معرفات اللاعبين مع توضيح حالة الـ API</string>
     <string name="auth_feature_news">أخبار المطورين الرسمية وملاحظات التحديث مباشرة</string>
     <string name="auth_sign_out">تسجيل الخروج</string>
+    <string name="guest_mode_label">وضع الزائر (حفظ محلي على الجهاز)</string>
+    <string name="guest_exit_label">العودة لشاشة الدخول</string>
+    <string name="guest_signin_sync_title">سجّل الدخول للمزامنة بين الأجهزة</string>
+    <string name="guest_signin_accounts_desc">ربط حسابات الألعاب ومزامنة بياناتك عبر الأجهزة يتطلب تسجيل الدخول بحساب Google. يمكنك الاستمرار في تصفح اكتشف والبحث والأخبار والقادمة ومكتبتك المحلية كزائر.</string>
+
+    <!-- Discover & Trending -->
+    <string name="discover_title">اكتشف</string>
+    <string name="trending_title">الأكثر رواجاً</string>
+    <string name="trending_subtitle">الألعاب الأكثر تداولاً وشعبية حالياً من قوائم Steam و FreeToGame الحية</string>
+    <string name="recommended_title">الألعاب المقترحة لك</string>
+    <string name="genres_title">تصنيفات الألعاب</string>
+    <string name="choose_interests_title">اختر أنواع الألعاب التي تفضلها</string>
+    <string name="choose_interests_desc">اختر تصنيفاً واحداً أو أكثر لنقترح لك الألعاب المناسبة لاهتماماتك، ويمكنك تعديلها في أي وقت.</string>
+    <string name="change_interests">تغيير الاهتمامات</string>
+    <string name="save_interests">حفظ الاهتمامات</string>
+    <string name="learn_more">اعرف المزيد</string>
+    <string name="trending_reason_label">سبب الرواج</string>
+    <string name="verified_rating_label">التقييم</string>
+    <string name="no_verified_rating">لا يتوفر تقييم</string>
+
+    <!-- Search & Filters -->
+    <string name="search_title">ابحث</string>
+    <string name="search_games">ابحث عن أي لعبة بالاسم…</string>
+    <string name="explorer_title">محرك بحث الألعاب</string>
+    <string name="recent_searches">آخر عمليات البحث</string>
+    <string name="clear_history">مسح</string>
+    <string name="suggestions_label">اقتراحات البحث</string>
+    <string name="filter_genre">التصنيف</string>
+    <string name="filter_platform">المنصة</string>
+    <string name="filter_release_date">تاريخ الإصدار</string>
+    <string name="filter_pricing">السعر</string>
+    <string name="filter_status">الحالة</string>
+    <string name="price_free">مجانية</string>
+    <string name="price_paid">مدفوعة</string>
+    <string name="era_upcoming">قادمة</string>
+    <string name="era_recent">2024–2026</string>
+    <string name="era_modern">2020–2023</string>
+    <string name="era_classic">كلاسيكية</string>
+    <string name="view_details">التفاصيل</string>
 
     <!-- Common Actions -->
-    <string name="search_games">ابحث عن أي لعبة…</string>
-    <string name="explorer_title">محرك بحث الألعاب</string>
     <string name="notifications_title">التنبيهات</string>
     <string name="missions_title">نظام المهام</string>
     <string name="accounts_title">حسابات الألعاب</string>
@@ -29,7 +73,7 @@
     <string name="add_manual_game">إضافة لعبة يدوياً</string>
     <string name="add_mission">إضافة مهمة</string>
     <string name="link_account">ربط حساب لعبة</string>
-    <string name="add_to_library">إضافة للمكتبة</string>
+    <string name="add_to_library">إضافة إلى مكتبتي</string>
     <string name="in_library">في المكتبة</string>
     <string name="add_to_waitlist">إضافة لقائمة الانتظار</string>
     <string name="in_waitlist">في قائمة الانتظار</string>
@@ -46,7 +90,7 @@
     <string name="close">إغلاق</string>
 
     <!-- Dashboard -->
-    <string name="dashboard_welcome">مركز القيادة</string>
+    <string name="dashboard_welcome">بوابة القيادة</string>
     <string name="dashboard_games_count">الألعاب</string>
     <string name="dashboard_missions_left">مهام متبقية</string>
     <string name="dashboard_alerts_count">التنبيهات</string>
@@ -87,13 +131,16 @@
     <string name="empty_news_desc">أضف ألعاباً لمكتبتك أو تحقق من الاتصال بالإنترنت لجلب أخبار المطورين الرسمية.</string>
     <string name="empty_notifications_title">لا توجد تنبيهات غير مقروءة</string>
     <string name="empty_notifications_desc">ستظهر هنا تنبيهات التحديثات الجديدة، انتهاء المواسم، اقتراب انتهاء المهام، وصدور ألعاب قائمة الانتظار.</string>
+    <string name="empty_search_title">لم يتم العثور على ألعاب مطابقة</string>
+    <string name="empty_search_desc">جرّب اسماً آخر أو قم بتخفيف بعض الفلاتر المحددة.</string>
 
     <!-- Settings & Preferences -->
     <string name="language_label">لغة التطبيق</string>
     <string name="lang_system">لغة النظام</string>
     <string name="lang_en">English</string>
     <string name="lang_ar">العربية</string>
-    <string name="dark_mode_label">الوضع الداكن (الافتراضي)</string>
+    <string name="lang_tr">Türkçe</string>
+    <string name="dark_mode_label">الوضع الداكن (هوية ZYVORA البنفسجية)</string>
     <string name="notifications_master">تفعيل التنبيهات</string>
     <string name="notif_updates">تنبيهات التحديثات والباتشات</string>
     <string name="notif_seasons">تنبيهات اقتراب انتهاء الموسم</string>

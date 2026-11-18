@@ -8,85 +8,89 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.example.R
 
-val SpaceGroteskFontFamily = FontFamily(
-    Font(R.font.space_grotesk, FontWeight.Normal),
-    Font(R.font.space_grotesk, FontWeight.Medium),
-    Font(R.font.space_grotesk, FontWeight.Bold)
+val TajawalFontFamily = FontFamily(
+    Font(R.font.tajawal, FontWeight.Normal),
+    Font(R.font.tajawal, FontWeight.Medium),
+    Font(R.font.tajawal, FontWeight.SemiBold),
+    Font(R.font.tajawal, FontWeight.Bold)
 )
 
-val CairoFontFamily = FontFamily(
-    Font(R.font.cairo, FontWeight.Normal),
-    Font(R.font.cairo, FontWeight.Medium),
-    Font(R.font.cairo, FontWeight.SemiBold),
-    Font(R.font.cairo, FontWeight.Bold)
+val InterFontFamily = FontFamily(
+    Font(R.font.inter, FontWeight.Normal),
+    Font(R.font.inter, FontWeight.Medium),
+    Font(R.font.inter, FontWeight.SemiBold),
+    Font(R.font.inter, FontWeight.Bold)
 )
 
-val NemoxTypography = Typography(
-    displayLarge = TextStyle(
-        fontFamily = SpaceGroteskFontFamily,
-        fontWeight = FontWeight.Bold,
-        fontSize = 36.sp,
-        lineHeight = 42.sp,
-        letterSpacing = (-0.5).sp
-    ),
-    headlineLarge = TextStyle(
-        fontFamily = SpaceGroteskFontFamily,
-        fontWeight = FontWeight.Bold,
-        fontSize = 26.sp,
-        lineHeight = 32.sp
-    ),
-    headlineMedium = TextStyle(
-        fontFamily = CairoFontFamily,
-        fontWeight = FontWeight.Bold,
-        fontSize = 22.sp,
-        lineHeight = 28.sp
-    ),
-    titleLarge = TextStyle(
-        fontFamily = CairoFontFamily,
-        fontWeight = FontWeight.Bold,
-        fontSize = 19.sp,
-        lineHeight = 26.sp
-    ),
-    titleMedium = TextStyle(
-        fontFamily = CairoFontFamily,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 16.sp,
-        lineHeight = 22.sp
-    ),
-    titleSmall = TextStyle(
-        fontFamily = CairoFontFamily,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 14.sp,
-        lineHeight = 20.sp
-    ),
-    bodyLarge = TextStyle(
-        fontFamily = CairoFontFamily,
-        fontWeight = FontWeight.Normal,
-        fontSize = 15.sp,
-        lineHeight = 22.sp
-    ),
-    bodyMedium = TextStyle(
-        fontFamily = CairoFontFamily,
-        fontWeight = FontWeight.Normal,
-        fontSize = 13.sp,
-        lineHeight = 19.sp
-    ),
-    labelLarge = TextStyle(
-        fontFamily = CairoFontFamily,
-        fontWeight = FontWeight.Bold,
-        fontSize = 13.sp,
-        lineHeight = 18.sp
-    ),
-    labelMedium = TextStyle(
-        fontFamily = SpaceGroteskFontFamily,
-        fontWeight = FontWeight.Medium,
-        fontSize = 12.sp,
-        lineHeight = 16.sp
-    ),
-    labelSmall = TextStyle(
-        fontFamily = SpaceGroteskFontFamily,
-        fontWeight = FontWeight.Medium,
-        fontSize = 11.sp,
-        lineHeight = 14.sp
+fun zyvoraTypography(isArabic: Boolean): Typography {
+    val activeFamily = if (isArabic) TajawalFontFamily else InterFontFamily
+    return Typography(
+        displayLarge = TextStyle(
+            fontFamily = activeFamily,
+            fontWeight = FontWeight.Bold,
+            fontSize = 36.sp,
+            lineHeight = 44.sp,
+            letterSpacing = if (isArabic) 0.sp else (-0.5).sp
+        ),
+        headlineLarge = TextStyle(
+            fontFamily = activeFamily,
+            fontWeight = FontWeight.Bold,
+            fontSize = 26.sp,
+            lineHeight = 34.sp
+        ),
+        headlineMedium = TextStyle(
+            fontFamily = activeFamily,
+            fontWeight = FontWeight.Bold,
+            fontSize = 22.sp,
+            lineHeight = 30.sp
+        ),
+        titleLarge = TextStyle(
+            fontFamily = activeFamily,
+            fontWeight = FontWeight.Bold,
+            fontSize = 19.sp,
+            lineHeight = 26.sp
+        ),
+        titleMedium = TextStyle(
+            fontFamily = activeFamily,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 16.sp,
+            lineHeight = 23.sp
+        ),
+        titleSmall = TextStyle(
+            fontFamily = activeFamily,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 14.sp,
+            lineHeight = 20.sp
+        ),
+        bodyLarge = TextStyle(
+            fontFamily = activeFamily,
+            fontWeight = FontWeight.Normal,
+            fontSize = 15.sp,
+            lineHeight = 23.sp
+        ),
+        bodyMedium = TextStyle(
+            fontFamily = activeFamily,
+            fontWeight = FontWeight.Normal,
+            fontSize = 13.sp,
+            lineHeight = 20.sp
+        ),
+        labelLarge = TextStyle(
+            fontFamily = activeFamily,
+            fontWeight = FontWeight.Bold,
+            fontSize = 13.sp,
+            lineHeight = 18.sp
+        ),
+        labelMedium = TextStyle(
+            fontFamily = activeFamily,
+            fontWeight = FontWeight.Medium,
+            fontSize = 12.sp,
+            lineHeight = 16.sp
+        ),
+        labelSmall = TextStyle(
+            fontFamily = activeFamily,
+            fontWeight = FontWeight.Medium,
+            fontSize = 11.sp,
+            lineHeight = 15.sp
+        )
     )
-)
+}

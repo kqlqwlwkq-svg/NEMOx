@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.browser.customtabs.CustomTabsIntent
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -57,7 +56,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -465,14 +463,27 @@ fun EmptyVaultState(
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.img_nemox_vault),
-                contentDescription = title,
-                contentScale = ContentScale.Crop,
+            Box(
+                contentAlignment = Alignment.Center,
                 modifier = Modifier
-                    .size(120.dp)
-                    .clip(RoundedCornerShape(20.dp))
-            )
+                    .size(104.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(
+                        Brush.linearGradient(
+                            listOf(
+                                MaterialTheme.colorScheme.primaryContainer,
+                                MaterialTheme.colorScheme.background
+                            )
+                        )
+                    )
+                    .border(
+                        1.dp,
+                        MaterialTheme.colorScheme.secondary.copy(alpha = 0.45f),
+                        RoundedCornerShape(24.dp)
+                    )
+            ) {
+                ZyvoraGeometricMark(size = 64.dp, glowAlpha = 0.45f)
+            }
             Spacer(modifier = Modifier.height(14.dp))
             Text(
                 text = title,

@@ -12,7 +12,7 @@ inline fun <reified T : Enum<T>> safeEnumValueOf(raw: String?, default: T): T {
 }
 
 enum class GameSourceType {
-    STEAM, FREETOGAME, MOJANG, FORTNITE, MANUAL
+    STEAM, FREETOGAME, MOJANG, FORTNITE, ITUNES, MANUAL
 }
 
 enum class AccountApiMode {
@@ -43,7 +43,7 @@ data class UserProfile(
     val displayName: String = "",
     val email: String? = null,
     val photoUrl: String? = null,
-    val preferredLanguage: String = "system",
+    val preferredLanguage: String = "ar",
     val darkMode: Boolean = true,
     val notificationsEnabled: Boolean = true,
     val notifyOnUpdates: Boolean = true,
@@ -102,6 +102,9 @@ data class LibraryGame(
     val notifySeasons: Boolean = true,
     val notifyMissions: Boolean = true,
     val notifyNews: Boolean = true,
+    val pcRequirementsMin: String? = null,
+    val pcRequirementsRec: String? = null,
+    val ratingSummary: String? = null,
     val lastUpdatedAtMillis: Long = 0L,
     val createdAt: Timestamp? = null,
     val updatedAt: Timestamp? = null
@@ -137,6 +140,9 @@ data class LibraryGame(
         put("lastUpdatedAtMillis", lastUpdatedAtMillis.coerceAtLeast(0L))
         officialUrl?.take(500)?.takeIf { it.isNotBlank() }?.let { put("officialUrl", it) }
         communityUrl?.take(500)?.takeIf { it.isNotBlank() }?.let { put("communityUrl", it) }
+        pcRequirementsMin?.take(1200)?.takeIf { it.isNotBlank() }?.let { put("pcRequirementsMin", it) }
+        pcRequirementsRec?.take(1200)?.takeIf { it.isNotBlank() }?.let { put("pcRequirementsRec", it) }
+        ratingSummary?.take(120)?.takeIf { it.isNotBlank() }?.let { put("ratingSummary", it) }
         put("createdAt", FieldValue.serverTimestamp())
         put("updatedAt", FieldValue.serverTimestamp())
     }

@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "NEMOx"
+rootProject.name = "ZYVORA"
 
 include(":app")

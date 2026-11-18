@@ -64,6 +64,8 @@ fun GameAccountsScreen(
     accountsState: UiState<List<GameAccount>>,
     isSyncing: Boolean,
     isArabic: Boolean,
+    isGuestMode: Boolean = false,
+    onSignInWithGoogle: () -> Unit = {},
     onLinkOrSyncAccount: (
         gameKey: String,
         customGameName: String,
@@ -86,71 +88,101 @@ fun GameAccountsScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            item {
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier.padding(14.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Lock,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            text = stringResource(R.string.no_passwords_banner),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
-                }
-            }
-
-            if (isSyncing) {
+            if (isGuestMode) {
                 item {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.65f), MaterialTheme.shapes.large)
                     ) {
-                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Syncing live account data…", style = MaterialTheme.typography.labelLarge)
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Text(
+                                text = stringResource(R.string.guest_signin_sync_title),
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.secondary
+                            )
+                            Text(
+                                text = stringResource(R.string.guest_signin_accounts_desc),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Button(
+                                onClick = onSignInWithGoogle,
+                                modifier = Modifier.fillMaxWidth().testTag("guest_prompt_google_signin")
+                            ) {
+                                Text(stringResource(R.string.auth_sign_in_google))
+                            }
+                        }
                     }
                 }
-            }
-
-            when (accountsState) {
-                is UiState.Loading -> item {
-                    Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
-                    }
-                }
-                is UiState.Error -> item {
-                    Text(accountsState.message, color = MaterialTheme.colorScheme.error)
-                }
-                is UiState.Success -> {
-                    val accounts = accountsState.data
-                    if (accounts.isEmpty()) {
-                        item {
-                            EmptyVaultState(
-                                title = stringResource(R.string.empty_accounts_title),
-                                description = stringResource(R.string.empty_accounts_desc),
-                                actionText = stringResource(R.string.link_account),
-                                onAction = { showLinkDialog = true }
+            } else {
+                item {
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Lock,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(
+                                text = stringResource(R.string.no_passwords_banner),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                         }
-                    } else {
-                        items(accounts, key = { it.id }) { account ->
-                            AccountCard(
-                                account = account,
-                                onRefreshLive = { onRefreshLive(account) },
-                                onDelete = { onDeleteAccount(account.id) }
-                            )
+                    }
+                }
+
+                if (isSyncing) {
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Syncing live account data…", style = MaterialTheme.typography.labelLarge)
+                        }
+                    }
+                }
+
+                when (accountsState) {
+                    is UiState.Loading -> item {
+                        Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
+                    }
+                    is UiState.Error -> item {
+                        Text(accountsState.message, color = MaterialTheme.colorScheme.error)
+                    }
+                    is UiState.Success -> {
+                        val accounts = accountsState.data
+                        if (accounts.isEmpty()) {
+                            item {
+                                EmptyVaultState(
+                                    title = stringResource(R.string.empty_accounts_title),
+                                    description = stringResource(R.string.empty_accounts_desc),
+                                    actionText = stringResource(R.string.link_account),
+                                    onAction = { showLinkDialog = true }
+                                )
+                            }
+                        } else {
+                            items(accounts, key = { it.id }) { account ->
+                                AccountCard(
+                                    account = account,
+                                    onRefreshLive = { onRefreshLive(account) },
+                                    onDelete = { onDeleteAccount(account.id) }
+                                )
+                            }
                         }
                     }
                 }
@@ -159,16 +191,18 @@ fun GameAccountsScreen(
             item { Spacer(modifier = Modifier.height(72.dp)) }
         }
 
-        FloatingActionButton(
-            onClick = { showLinkDialog = true },
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp)
-                .testTag("link_account_fab")
-        ) {
-            Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.link_account))
+        if (!isGuestMode) {
+            FloatingActionButton(
+                onClick = { showLinkDialog = true },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp)
+                    .testTag("link_account_fab")
+            ) {
+                Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.link_account))
+            }
         }
     }
 

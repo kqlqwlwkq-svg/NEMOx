@@ -2,35 +2,38 @@ package com.example.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// NEMOx Cyber Obsidian Palette (Dark Mode Default)
-val ObsidianBg = Color(0xFF0B0E14)
-val ObsidianSurface = Color(0xFF121722)
-val ObsidianSurfaceElevated = Color(0xFF1A2231)
-val ObsidianSurfaceHighest = Color(0xFF232E42)
-val ObsidianOutline = Color(0xFF2D3B52)
+// ZYVORA Dark Obsidian-Violet Brand Palette
+val ZyvoraVoidBg = Color(0xFF090711)
+val ZyvoraNavSurface = Color(0xFF120B1F)
+val ZyvoraCardBg = Color(0xFF25133D)
+val ZyvoraCardElevated = Color(0xFF321B52)
+val ZyvoraCardHighest = Color(0xFF3E2266)
+val ZyvoraOutline = Color(0xFF4C2B78)
 
-val NeonGreen = Color(0xFF00FF87)
-val NeonGreenDim = Color(0xFF00C96A)
-val NeonGreenContainer = Color(0xFF0A3324)
+val ZyvoraVioletPrimary = Color(0xFF7136C9)
+val ZyvoraVioletContainer = Color(0xFF381A66)
+val ZyvoraLuminousViolet = Color(0xFFB58AFF)
+val ZyvoraLuminousContainer = Color(0xFF2F1A52)
 
-val ElectricBlue = Color(0xFF00D4FF)
-val ElectricBlueDim = Color(0xFF00A3CC)
-val ElectricBlueContainer = Color(0xFF0A2A3B)
+val ZyvoraTextLight = Color(0xFFF5F1FA)
+val ZyvoraTextMuted = Color(0xFFC5B6DE)
 
-val CyberAmber = Color(0xFFFFB800)
-val CyberAmberContainer = Color(0xFF332605)
+// Semantic Accents tuned for WCAG AA contrast on #090711 & #25133D
+val ZyvoraAmber = Color(0xFFFBBF24)
+val ZyvoraAmberContainer = Color(0xFF3C2B10)
 
-val CyberRed = Color(0xFFFF4D6A)
-val CyberRedContainer = Color(0xFF3B121B)
+val ZyvoraError = Color(0xFFFF6B8B)
+val ZyvoraErrorContainer = Color(0xFF4A182B)
 
-val TextPrimaryDark = Color(0xFFF3F6FC)
-val TextSecondaryDark = Color(0xFF9AA8BF)
+val ZyvoraSuccess = Color(0xFF4ADE80)
+val ZyvoraSuccessContainer = Color(0xFF143528)
 
-// Optional Light Mode Palette
-val LightBg = Color(0xFFF4F7FB)
+// Optional Light Mode Palette (if user turns off Dark Mode in Settings)
+val LightBg = Color(0xFFF7F4FC)
 val LightSurface = Color(0xFFFFFFFF)
-val LightSurfaceVariant = Color(0xFFE8EEF7)
-val LightPrimary = Color(0xFF009952)
-val LightSecondary = Color(0xFF0088B3)
-val TextPrimaryLight = Color(0xFF0E1420)
-val TextSecondaryLight = Color(0xFF4F5D75)
+val LightSurfaceVariant = Color(0xFFEDE6FA)
+val LightPrimary = Color(0xFF7136C9)
+val LightSecondary = Color(0xFF5A23AD)
+val LightOutline = Color(0xFFD5C6EE)
+val TextPrimaryLight = Color(0xFF160B29)
+val TextSecondaryLight = Color(0xFF54436E)

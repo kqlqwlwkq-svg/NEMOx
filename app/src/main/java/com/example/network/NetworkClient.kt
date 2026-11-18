@@ -19,8 +19,21 @@ object NetworkClient {
     fun fetchJsonString(url: String): String? {
         val request = Request.Builder()
             .url(url)
-            .header("User-Agent", "NEMOxGamingHub/1.0 (Android)")
+            .header("User-Agent", "ZYVORAGamingHub/1.0 (Android)")
             .header("Accept", "application/json")
+            .build()
+
+        okHttpClient.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) return null
+            return response.body?.string()
+        }
+    }
+
+    fun fetchXmlOrFeedString(url: String): String? {
+        val request = Request.Builder()
+            .url(url)
+            .header("User-Agent", "ZYVORAGamingHub/1.0 (Android)")
+            .header("Accept", "application/rss+xml, application/atom+xml, application/xml, text/xml, */*")
             .build()
 
         okHttpClient.newCall(request).execute().use { response ->
