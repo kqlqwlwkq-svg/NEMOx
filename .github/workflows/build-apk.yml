@@ -24,13 +24,21 @@ jobs:
           java-version: '21'
 
       - name: Set up Android SDK & Accept Licenses
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
+        with:
+          accept-android-sdk-licenses: 'true'
+          log-accepted-android-sdk-licenses: 'false'
+          packages: |
+            platform-tools
+            platforms;android-36
+            platforms;android-36.1
+            build-tools;36.0.0
 
-      - name: Ensure Android SDK Licenses Accepted
+      - name: Verify Android SDK Licenses
         shell: bash
         run: |
-          if [ -n "${ANDROID_HOME:-}" ] && [ -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
-            yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null 2>&1 || true
+          if command -v sdkmanager >/dev/null 2>&1; then
+            yes | sdkmanager --licenses >/dev/null 2>&1 || true
           fi
 
       - name: Ensure Gradle Wrapper is Executable
