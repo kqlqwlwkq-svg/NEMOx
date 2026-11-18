@@ -1,0 +1,6 @@
+{
+  "name": "NEMOx",
+  "description": "A comprehensive personal Gaming Hub to manage your game library, track missions, link game accounts, follow official gaming news, discover upcoming releases, and receive custom alerts.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

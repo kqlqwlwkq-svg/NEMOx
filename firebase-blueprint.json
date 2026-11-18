@@ -1,0 +1,176 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Authenticated gamer profile and global app preferences",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Firebase Auth UID" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "photoUrl": { "type": "string" },
+        "preferredLanguage": { "type": "string", "enum": ["system", "en", "ar"] },
+        "darkMode": { "type": "boolean" },
+        "notificationsEnabled": { "type": "boolean" },
+        "notifyOnUpdates": { "type": "boolean" },
+        "notifyOnSeasons": { "type": "boolean" },
+        "notifyOnMissions": { "type": "boolean" },
+        "notifyOnUpcoming": { "type": "boolean" },
+        "notifyOnNews": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp via FieldValue.serverTimestamp()" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp via FieldValue.serverTimestamp()" }
+      },
+      "required": ["userId", "displayName", "preferredLanguage", "darkMode", "notificationsEnabled", "createdAt", "updatedAt"]
+    },
+    "LibraryGame": {
+      "title": "LibraryGame",
+      "description": "Game added to the user's personal NEMOx library",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "externalId": { "type": "string" },
+        "title": { "type": "string" },
+        "coverUrl": { "type": "string" },
+        "iconUrl": { "type": "string" },
+        "sourceType": { "type": "string", "enum": ["STEAM", "FREETOGAME", "MOJANG", "FORTNITE", "MANUAL"] },
+        "steamAppId": { "type": "integer" },
+        "platforms": { "type": "array" },
+        "genres": { "type": "array" },
+        "favorite": { "type": "boolean" },
+        "needsUpdate": { "type": "boolean" },
+        "updateNotes": { "type": "string" },
+        "nextUpdateDateText": { "type": "string" },
+        "nextUpdateAtMillis": { "type": "integer" },
+        "currentSeasonName": { "type": "string" },
+        "seasonEndsAtMillis": { "type": "integer" },
+        "playHours": { "type": "integer" },
+        "playerLevel": { "type": "integer" },
+        "achievementsUnlocked": { "type": "integer" },
+        "achievementsTotal": { "type": "integer" },
+        "officialUrl": { "type": "string" },
+        "communityUrl": { "type": "string" },
+        "notifyUpdates": { "type": "boolean" },
+        "notifySeasons": { "type": "boolean" },
+        "notifyMissions": { "type": "boolean" },
+        "notifyNews": { "type": "boolean" },
+        "lastUpdatedAtMillis": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp via FieldValue.serverTimestamp()" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp via FieldValue.serverTimestamp()" }
+      },
+      "required": ["userId", "externalId", "title", "sourceType", "favorite", "needsUpdate", "playHours", "playerLevel", "achievementsUnlocked", "achievementsTotal", "notifyUpdates", "notifySeasons", "notifyMissions", "notifyNews", "lastUpdatedAtMillis", "createdAt", "updatedAt"]
+    },
+    "GameAccount": {
+      "title": "GameAccount",
+      "description": "Linked player game account ID and non-sensitive stats (never stores passwords)",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "gameKey": { "type": "string" },
+        "gameName": { "type": "string" },
+        "playerIdentifier": { "type": "string" },
+        "platform": { "type": "string" },
+        "serverRegion": { "type": "string" },
+        "level": { "type": "integer" },
+        "rankTier": { "type": "string" },
+        "statsSummary": { "type": "string" },
+        "achievementsText": { "type": "string" },
+        "apiMode": { "type": "string", "enum": ["LIVE_OFFICIAL_API", "LIVE_COMMUNITY_XML", "MANUAL_NO_PUBLIC_API"] },
+        "apiAvailabilityNote": { "type": "string" },
+        "avatarUrl": { "type": "string" },
+        "verifiedPlayerId": { "type": "string" },
+        "lastSyncedAtMillis": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "gameKey", "gameName", "playerIdentifier", "platform", "level", "apiMode", "lastSyncedAtMillis", "createdAt", "updatedAt"]
+    },
+    "GameMission": {
+      "title": "GameMission",
+      "description": "Daily, weekly, or seasonal mission tracked by the player",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "gameDocId": { "type": "string" },
+        "gameName": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "category": { "type": "string", "enum": ["DAILY", "WEEKLY", "SEASONAL"] },
+        "currentProgress": { "type": "integer" },
+        "targetProgress": { "type": "integer" },
+        "completed": { "type": "boolean" },
+        "expiresAtMillis": { "type": "integer" },
+        "rewardText": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "gameName", "title", "category", "currentProgress", "targetProgress", "completed", "expiresAtMillis", "createdAt", "updatedAt"]
+    },
+    "WaitlistGame": {
+      "title": "WaitlistGame",
+      "description": "Upcoming or anticipated game in user's waitlist with release notifications",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "externalId": { "type": "string" },
+        "title": { "type": "string" },
+        "coverUrl": { "type": "string" },
+        "releaseDateText": { "type": "string" },
+        "releaseTimestampMillis": { "type": "integer" },
+        "platforms": { "type": "array" },
+        "genre": { "type": "string" },
+        "description": { "type": "string" },
+        "status": { "type": "string", "enum": ["UPCOMING", "AVAILABLE", "DELAYED", "CANCELLED"] },
+        "notifyBeforeRelease": { "type": "boolean" },
+        "notifyOnRelease": { "type": "boolean" },
+        "steamAppId": { "type": "integer" },
+        "trailerUrl": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "externalId", "title", "releaseDateText", "releaseTimestampMillis", "status", "notifyBeforeRelease", "notifyOnRelease", "createdAt", "updatedAt"]
+    },
+    "UserNotification": {
+      "title": "UserNotification",
+      "description": "In-app notification alert item",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "type": "string",
+        "title": { "type": "string" },
+        "body": { "type": "string" },
+        "gameName": { "type": "string" },
+        "read": { "type": "boolean" },
+        "createdAtMillis": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "type", "title", "body", "read", "createdAtMillis", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "User profile and global preferences"
+    },
+    "/users/{userId}/library_games/{gameDocId}": {
+      "schema": { "$ref": "#/entities/LibraryGame" },
+      "description": "Games saved in the user's library"
+    },
+    "/users/{userId}/game_accounts/{accountId}": {
+      "schema": { "$ref": "#/entities/GameAccount" },
+      "description": "Linked player game accounts"
+    },
+    "/users/{userId}/missions/{missionId}": {
+      "schema": { "$ref": "#/entities/GameMission" },
+      "description": "Player daily, weekly, and seasonal missions"
+    },
+    "/users/{userId}/waitlist/{waitlistId}": {
+      "schema": { "$ref": "#/entities/WaitlistGame" },
+      "description": "Upcoming games waitlist"
+    },
+    "/users/{userId}/notifications/{notifId}": {
+      "schema": { "$ref": "#/entities/UserNotification" },
+      "description": "User notification inbox"
+    }
+  }
+}

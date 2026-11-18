@@ -1,0 +1,361 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- GLOBAL HARDENED HELPERS ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidString(val, minLen, maxLen) {
+      return val is string && val.size() >= minLen && val.size() <= maxLen;
+    }
+
+    function isOptionalString(data, key, maxLen) {
+      return !(key in data) || (data[key] is string && data[key].size() <= maxLen);
+    }
+
+    function isBoundedStringList(data, key, maxItems) {
+      return !(key in data) || (
+        data[key] is list &&
+        data[key].size() <= maxItems &&
+        (data[key].size() == 0 || (data[key][0] is string && data[key][0].size() <= 60))
+      );
+    }
+
+    // --- ENTITY VALIDATION HELPERS ---
+    function isValidUserProfile(data, userId) {
+      return data.userId == userId &&
+        isValidString(data.displayName, 1, 80) &&
+        isOptionalString(data, 'email', 120) &&
+        isOptionalString(data, 'photoUrl', 500) &&
+        data.preferredLanguage in ['system', 'en', 'ar'] &&
+        data.darkMode is bool &&
+        data.notificationsEnabled is bool &&
+        (!('notifyOnUpdates' in data) || data.notifyOnUpdates is bool) &&
+        (!('notifyOnSeasons' in data) || data.notifyOnSeasons is bool) &&
+        (!('notifyOnMissions' in data) || data.notifyOnMissions is bool) &&
+        (!('notifyOnUpcoming' in data) || data.notifyOnUpcoming is bool) &&
+        (!('notifyOnNews' in data) || data.notifyOnNews is bool);
+    }
+
+    function isValidLibraryGame(data, userId) {
+      return data.userId == userId &&
+        isValidString(data.externalId, 1, 64) &&
+        isValidString(data.title, 1, 120) &&
+        isOptionalString(data, 'coverUrl', 500) &&
+        isOptionalString(data, 'iconUrl', 500) &&
+        data.sourceType in ['STEAM', 'FREETOGAME', 'MOJANG', 'FORTNITE', 'MANUAL'] &&
+        (!('steamAppId' in data) || (data.steamAppId is int && data.steamAppId >= 0)) &&
+        isBoundedStringList(data, 'platforms', 10) &&
+        isBoundedStringList(data, 'genres', 10) &&
+        data.favorite is bool &&
+        data.needsUpdate is bool &&
+        isOptionalString(data, 'updateNotes', 500) &&
+        isOptionalString(data, 'nextUpdateDateText', 80) &&
+        (!('nextUpdateAtMillis' in data) || (data.nextUpdateAtMillis is int && data.nextUpdateAtMillis >= 0)) &&
+        isOptionalString(data, 'currentSeasonName', 120) &&
+        (!('seasonEndsAtMillis' in data) || (data.seasonEndsAtMillis is int && data.seasonEndsAtMillis >= 0)) &&
+        data.playHours is int && data.playHours >= 0 && data.playHours <= 1000000 &&
+        data.playerLevel is int && data.playerLevel >= 0 && data.playerLevel <= 100000 &&
+        data.achievementsUnlocked is int && data.achievementsUnlocked >= 0 &&
+        data.achievementsTotal is int && data.achievementsTotal >= 0 &&
+        isOptionalString(data, 'officialUrl', 500) &&
+        isOptionalString(data, 'communityUrl', 500) &&
+        data.notifyUpdates is bool &&
+        data.notifySeasons is bool &&
+        data.notifyMissions is bool &&
+        data.notifyNews is bool &&
+        data.lastUpdatedAtMillis is int && data.lastUpdatedAtMillis >= 0;
+    }
+
+    function isValidGameAccount(data, userId) {
+      return data.userId == userId &&
+        isValidString(data.gameKey, 1, 40) &&
+        isValidString(data.gameName, 1, 80) &&
+        isValidString(data.playerIdentifier, 1, 80) &&
+        isValidString(data.platform, 1, 40) &&
+        isOptionalString(data, 'serverRegion', 40) &&
+        data.level is int && data.level >= 0 && data.level <= 100000 &&
+        isOptionalString(data, 'rankTier', 60) &&
+        isOptionalString(data, 'statsSummary', 400) &&
+        isOptionalString(data, 'achievementsText', 400) &&
+        data.apiMode in ['LIVE_OFFICIAL_API', 'LIVE_COMMUNITY_XML', 'MANUAL_NO_PUBLIC_API'] &&
+        isOptionalString(data, 'apiAvailabilityNote', 300) &&
+        isOptionalString(data, 'avatarUrl', 500) &&
+        isOptionalString(data, 'verifiedPlayerId', 120) &&
+        data.lastSyncedAtMillis is int && data.lastSyncedAtMillis >= 0;
+    }
+
+    function isValidGameMission(data, userId) {
+      return data.userId == userId &&
+        isOptionalString(data, 'gameDocId', 128) &&
+        isValidString(data.gameName, 1, 80) &&
+        isValidString(data.title, 1, 140) &&
+        isOptionalString(data, 'description', 300) &&
+        data.category in ['DAILY', 'WEEKLY', 'SEASONAL'] &&
+        data.currentProgress is int && data.currentProgress >= 0 &&
+        data.targetProgress is int && data.targetProgress >= 1 && data.targetProgress <= 1000000 &&
+        data.completed is bool &&
+        data.expiresAtMillis is int && data.expiresAtMillis >= 0 &&
+        isOptionalString(data, 'rewardText', 100);
+    }
+
+    function isValidWaitlistGame(data, userId) {
+      return data.userId == userId &&
+        isValidString(data.externalId, 1, 64) &&
+        isValidString(data.title, 1, 120) &&
+        isOptionalString(data, 'coverUrl', 500) &&
+        isValidString(data.releaseDateText, 1, 80) &&
+        data.releaseTimestampMillis is int && data.releaseTimestampMillis >= 0 &&
+        isBoundedStringList(data, 'platforms', 10) &&
+        isOptionalString(data, 'genre', 80) &&
+        isOptionalString(data, 'description', 600) &&
+        data.status in ['UPCOMING', 'AVAILABLE', 'DELAYED', 'CANCELLED'] &&
+        data.notifyBeforeRelease is bool &&
+        data.notifyOnRelease is bool &&
+        (!('steamAppId' in data) || (data.steamAppId is int && data.steamAppId >= 0)) &&
+        isOptionalString(data, 'trailerUrl', 500);
+    }
+
+    function isValidUserNotification(data, userId) {
+      return data.userId == userId &&
+        data.type in ['UPDATE_RELEASED', 'UPCOMING_UPDATE', 'SEASON_ENDING', 'MISSION_EXPIRING', 'WAITLIST_RELEASE', 'FAVORITE_NEWS'] &&
+        isValidString(data.title, 1, 140) &&
+        isValidString(data.body, 1, 400) &&
+        isOptionalString(data, 'gameName', 80) &&
+        data.read is bool &&
+        data.createdAtMillis is int && data.createdAtMillis >= 0;
+    }
+
+    // --- COLLECTION RULES ---
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if false;
+
+      allow create: if isOwner(userId) &&
+        isValidId(userId) &&
+        incoming().keys().hasAll(['userId', 'displayName', 'preferredLanguage', 'darkMode', 'notificationsEnabled', 'createdAt', 'updatedAt']) &&
+        incoming().keys().hasOnly([
+          'userId', 'displayName', 'email', 'photoUrl', 'preferredLanguage', 'darkMode',
+          'notificationsEnabled', 'notifyOnUpdates', 'notifyOnSeasons', 'notifyOnMissions',
+          'notifyOnUpcoming', 'notifyOnNews', 'createdAt', 'updatedAt'
+        ]) &&
+        incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+        incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+        isValidUserProfile(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+        isValidId(userId) &&
+        isValidUserProfile(incoming(), userId) &&
+        incoming().userId == existing().userId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'displayName', 'email', 'photoUrl', 'preferredLanguage', 'darkMode',
+          'notificationsEnabled', 'notifyOnUpdates', 'notifyOnSeasons', 'notifyOnMissions',
+          'notifyOnUpcoming', 'notifyOnNews', 'updatedAt'
+        ]);
+
+      allow delete: if isOwner(userId) && isValidId(userId);
+
+      // Library Games Subcollection
+      match /library_games/{gameDocId} {
+        allow get: if isOwner(userId) && isValidId(gameDocId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+          isValidId(gameDocId) &&
+          incoming().keys().hasAll([
+            'userId', 'externalId', 'title', 'sourceType', 'favorite', 'needsUpdate',
+            'playHours', 'playerLevel', 'achievementsUnlocked', 'achievementsTotal',
+            'notifyUpdates', 'notifySeasons', 'notifyMissions', 'notifyNews',
+            'lastUpdatedAtMillis', 'createdAt', 'updatedAt'
+          ]) &&
+          incoming().keys().hasOnly([
+            'userId', 'externalId', 'title', 'coverUrl', 'iconUrl', 'sourceType', 'steamAppId',
+            'platforms', 'genres', 'favorite', 'needsUpdate', 'updateNotes', 'nextUpdateDateText',
+            'nextUpdateAtMillis', 'currentSeasonName', 'seasonEndsAtMillis', 'playHours',
+            'playerLevel', 'achievementsUnlocked', 'achievementsTotal', 'officialUrl', 'communityUrl',
+            'notifyUpdates', 'notifySeasons', 'notifyMissions', 'notifyNews', 'lastUpdatedAtMillis',
+            'createdAt', 'updatedAt'
+          ]) &&
+          incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+          incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+          isValidLibraryGame(incoming(), userId);
+
+        allow update: if isOwner(userId) &&
+          isValidId(gameDocId) &&
+          isValidLibraryGame(incoming(), userId) &&
+          incoming().userId == existing().userId &&
+          incoming().externalId == existing().externalId &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'title', 'coverUrl', 'iconUrl', 'favorite', 'needsUpdate', 'updateNotes',
+            'nextUpdateDateText', 'nextUpdateAtMillis', 'currentSeasonName', 'seasonEndsAtMillis',
+            'playHours', 'playerLevel', 'achievementsUnlocked', 'achievementsTotal',
+            'officialUrl', 'communityUrl', 'notifyUpdates', 'notifySeasons', 'notifyMissions',
+            'notifyNews', 'lastUpdatedAtMillis', 'updatedAt'
+          ]);
+
+        allow delete: if isOwner(userId) && isValidId(gameDocId);
+      }
+
+      // Game Accounts Subcollection
+      match /game_accounts/{accountId} {
+        allow get: if isOwner(userId) && isValidId(accountId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+          isValidId(accountId) &&
+          incoming().keys().hasAll([
+            'userId', 'gameKey', 'gameName', 'playerIdentifier', 'platform',
+            'level', 'apiMode', 'lastSyncedAtMillis', 'createdAt', 'updatedAt'
+          ]) &&
+          incoming().keys().hasOnly([
+            'userId', 'gameKey', 'gameName', 'playerIdentifier', 'platform', 'serverRegion',
+            'level', 'rankTier', 'statsSummary', 'achievementsText', 'apiMode',
+            'apiAvailabilityNote', 'avatarUrl', 'verifiedPlayerId', 'lastSyncedAtMillis',
+            'createdAt', 'updatedAt'
+          ]) &&
+          incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+          incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+          isValidGameAccount(incoming(), userId);
+
+        allow update: if isOwner(userId) &&
+          isValidId(accountId) &&
+          isValidGameAccount(incoming(), userId) &&
+          incoming().userId == existing().userId &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'gameName', 'playerIdentifier', 'platform', 'serverRegion', 'level', 'rankTier',
+            'statsSummary', 'achievementsText', 'apiMode', 'apiAvailabilityNote', 'avatarUrl',
+            'verifiedPlayerId', 'lastSyncedAtMillis', 'updatedAt'
+          ]);
+
+        allow delete: if isOwner(userId) && isValidId(accountId);
+      }
+
+      // Missions Subcollection
+      match /missions/{missionId} {
+        allow get: if isOwner(userId) && isValidId(missionId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+          isValidId(missionId) &&
+          incoming().keys().hasAll([
+            'userId', 'gameName', 'title', 'category', 'currentProgress',
+            'targetProgress', 'completed', 'expiresAtMillis', 'createdAt', 'updatedAt'
+          ]) &&
+          incoming().keys().hasOnly([
+            'userId', 'gameDocId', 'gameName', 'title', 'description', 'category',
+            'currentProgress', 'targetProgress', 'completed', 'expiresAtMillis',
+            'rewardText', 'createdAt', 'updatedAt'
+          ]) &&
+          incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+          incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+          isValidGameMission(incoming(), userId);
+
+        allow update: if isOwner(userId) &&
+          isValidId(missionId) &&
+          isValidGameMission(incoming(), userId) &&
+          incoming().userId == existing().userId &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'title', 'description', 'category', 'currentProgress', 'targetProgress',
+            'completed', 'expiresAtMillis', 'rewardText', 'updatedAt'
+          ]);
+
+        allow delete: if isOwner(userId) && isValidId(missionId);
+      }
+
+      // Waitlist Games Subcollection
+      match /waitlist/{waitlistId} {
+        allow get: if isOwner(userId) && isValidId(waitlistId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+          isValidId(waitlistId) &&
+          incoming().keys().hasAll([
+            'userId', 'externalId', 'title', 'releaseDateText', 'releaseTimestampMillis',
+            'status', 'notifyBeforeRelease', 'notifyOnRelease', 'createdAt', 'updatedAt'
+          ]) &&
+          incoming().keys().hasOnly([
+            'userId', 'externalId', 'title', 'coverUrl', 'releaseDateText',
+            'releaseTimestampMillis', 'platforms', 'genre', 'description', 'status',
+            'notifyBeforeRelease', 'notifyOnRelease', 'steamAppId', 'trailerUrl',
+            'createdAt', 'updatedAt'
+          ]) &&
+          incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+          incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+          isValidWaitlistGame(incoming(), userId);
+
+        allow update: if isOwner(userId) &&
+          isValidId(waitlistId) &&
+          isValidWaitlistGame(incoming(), userId) &&
+          incoming().userId == existing().userId &&
+          incoming().externalId == existing().externalId &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'releaseDateText', 'releaseTimestampMillis', 'status',
+            'notifyBeforeRelease', 'notifyOnRelease', 'updatedAt'
+          ]);
+
+        allow delete: if isOwner(userId) && isValidId(waitlistId);
+      }
+
+      // User Notifications Subcollection
+      match /notifications/{notifId} {
+        allow get: if isOwner(userId) && isValidId(notifId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+          isValidId(notifId) &&
+          incoming().keys().hasAll([
+            'userId', 'type', 'title', 'body', 'read', 'createdAtMillis', 'createdAt', 'updatedAt'
+          ]) &&
+          incoming().keys().hasOnly([
+            'userId', 'type', 'title', 'body', 'gameName', 'read', 'createdAtMillis', 'createdAt', 'updatedAt'
+          ]) &&
+          incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+          incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+          isValidUserNotification(incoming(), userId);
+
+        allow update: if isOwner(userId) &&
+          isValidId(notifId) &&
+          isValidUserNotification(incoming(), userId) &&
+          incoming().userId == existing().userId &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['read', 'updatedAt']);
+
+        allow delete: if isOwner(userId) && isValidId(notifId);
+      }
+    }
+  }
+}
