@@ -95,7 +95,24 @@ jobs:
             exit 1
           fi
           ls -lh "$APK_PATH"
+         
 
+      - name: Inspect APK Signing Certificate (Temporary)
+        shell: bash
+        run: |
+          APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          APKSIGNER="$SDK_ROOT/build-tools/36.0.0/apksigner"
+          if [ ! -x "$APKSIGNER" ]; then
+            APKSIGNER="$(find "$SDK_ROOT/build-tools" -name apksigner 2>/dev/null | sort -V | tail -n 1)"
+          fi
+          if [ -z "$APKSIGNER" ] || [ ! -x "$APKSIGNER" ]; then
+            echo "Error: apksigner not found"
+            exit 1
+          fi
+          CERT_INFO="$("$APKSIGNER" verify --print-certs "$APK_PATH")"
+          echo "$CERT_INFO" | grep -E 'Signer #[0-9]+ certificate (DN|SHA-256 digest|SHA-1 digest):'
+          
       - name: Upload Debug APK Artifact
         uses: actions/upload-artifact@v4
         with:
