@@ -69,6 +69,103 @@ jobs:
             fi
           fi
 
+      - name: Restore Firebase Configuration
+        shell: bash
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -f app/google-services.json ]; then
+            echo "app/google-services.json already present."
+            exit 0
+          fi
+          python3 - <<'PY'
+          import json
+          import os
+          import sys
+
+          EXPECTED_PACKAGE = "com.aistudio.nemoxhub.k7m2vx"
+
+          raw = os.environ.get("GOOGLE_SERVICES_JSON", "").lstrip("\ufeff").strip()
+          if not raw:
+              print("Error: app/google-services.json is missing and GitHub Secret GOOGLE_SERVICES_JSON is not set.", file=sys.stderr)
+              sys.exit(1)
+
+          try:
+              data = json.loads(raw)
+          except Exception:
+              print("Error: GOOGLE_SERVICES_JSON does not contain valid JSON.", file=sys.stderr)
+              sys.exit(1)
+
+          if not isinstance(data, dict):
+              print("Error: GOOGLE_SERVICES_JSON root must be a JSON object.", file=sys.stderr)
+              sys.exit(1)
+
+          project_info = data.get("project_info")
+          clients = data.get("client")
+          if (
+              not isinstance(project_info, dict)
+              or not str(project_info.get("project_id", "")).strip()
+              or not str(project_info.get("project_number", "")).strip()
+          ):
+              print("Error: GOOGLE_SERVICES_JSON is missing required project_info fields.", file=sys.stderr)
+              sys.exit(1)
+
+          if not isinstance(clients, list) or len(clients) == 0:
+              print("Error: GOOGLE_SERVICES_JSON is missing required client entries.", file=sys.stderr)
+              sys.exit(1)
+
+          matched_client = None
+          for client in clients:
+              if not isinstance(client, dict):
+                  continue
+              client_info = client.get("client_info") or {}
+              android_info = client_info.get("android_client_info") or {}
+              if (
+                  isinstance(client_info, dict)
+                  and isinstance(android_info, dict)
+                  and android_info.get("package_name") == EXPECTED_PACKAGE
+              ):
+                  matched_client = client
+                  break
+
+          if matched_client is None:
+              print(f"Error: No Firebase client matches package_name {EXPECTED_PACKAGE}.", file=sys.stderr)
+              sys.exit(1)
+
+          client_info = matched_client.get("client_info") or {}
+          if not str(client_info.get("mobilesdk_app_id", "")).strip():
+              print("Error: Matching client is missing mobilesdk_app_id.", file=sys.stderr)
+              sys.exit(1)
+
+          api_keys = matched_client.get("api_key") or []
+          has_current_key = isinstance(api_keys, list) and any(
+              isinstance(k, dict) and isinstance(k.get("current_key"), str) and k.get("current_key").strip() != ""
+              for k in api_keys
+          )
+          if not has_current_key:
+              print("Error: Matching client is missing a non-empty current_key in api_key.", file=sys.stderr)
+              sys.exit(1)
+
+          oauth_clients = matched_client.get("oauth_client") or []
+          has_web_oauth_client = isinstance(oauth_clients, list) and any(
+              isinstance(oc, dict)
+              and oc.get("client_type") == 3
+              and isinstance(oc.get("client_id"), str)
+              and oc.get("client_id").strip() != ""
+              for oc in oauth_clients
+          )
+          if not has_web_oauth_client:
+              print("Error: Matching client is missing oauth_client with client_type = 3 and non-empty client_id.", file=sys.stderr)
+              sys.exit(1)
+
+          os.makedirs("app", exist_ok=True)
+          with open("app/google-services.json", "w", encoding="utf-8") as f:
+              json.dump(data, f, indent=2)
+              f.write("\n")
+
+          print("Restored app/google-services.json successfully (JSON, package_name, api_key.current_key, and Web oauth_client verified).")
+          PY
+
       - name: Build Debug APK
         shell: bash
         run: ./gradlew :app:assembleDebug --stacktrace
