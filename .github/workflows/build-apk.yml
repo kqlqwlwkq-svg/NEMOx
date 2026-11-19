@@ -49,19 +49,6 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
-        
-      - name: Restore Firebase Configuration
-        shell: bash
-        env:
-          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
-        run: |
-          if [ -z "$GOOGLE_SERVICES_JSON" ]; then
-            echo "Firebase secret is missing"
-            exit 1
-          fi
-          printf '%s' "$GOOGLE_SERVICES_JSON" > app/google-services.json
-          test -s app/google-services.json
-          
 
       - name: Prepare Local Debug Keystore
         shell: bash
@@ -95,7 +82,6 @@ jobs:
             exit 1
           fi
           ls -lh "$APK_PATH"
-         
 
       - name: Inspect APK Signing Certificate (Temporary)
         shell: bash
@@ -107,12 +93,12 @@ jobs:
             APKSIGNER="$(find "$SDK_ROOT/build-tools" -name apksigner 2>/dev/null | sort -V | tail -n 1)"
           fi
           if [ -z "$APKSIGNER" ] || [ ! -x "$APKSIGNER" ]; then
-            echo "Error: apksigner not found"
+            echo "Error: apksigner not found under $SDK_ROOT/build-tools"
             exit 1
           fi
           CERT_INFO="$("$APKSIGNER" verify --print-certs "$APK_PATH")"
           echo "$CERT_INFO" | grep -E 'Signer #[0-9]+ certificate (DN|SHA-256 digest|SHA-1 digest):'
-          
+
       - name: Upload Debug APK Artifact
         uses: actions/upload-artifact@v4
         with:
