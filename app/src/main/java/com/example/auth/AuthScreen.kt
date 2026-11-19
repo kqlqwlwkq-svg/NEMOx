@@ -48,6 +48,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -82,7 +83,7 @@ fun AuthScreen(
     val credentialManager = remember(context) { CredentialManager.create(context) }
 
     var isLoading by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var errorMessage by rememberSaveable { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
         attemptAutoSignIn(
@@ -246,7 +247,7 @@ fun AuthScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            if (errorMessage != null) {
+            if (!errorMessage.isNullOrBlank()) {
                 Card(
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.errorContainer
@@ -257,7 +258,7 @@ fun AuthScreen(
                         .padding(bottom = 12.dp)
                 ) {
                     Text(
-                        text = errorMessage ?: "",
+                        text = errorMessage.orEmpty(),
                         color = MaterialTheme.colorScheme.onErrorContainer,
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.padding(12.dp)
@@ -278,11 +279,14 @@ fun AuthScreen(
                         },
                         onAuthError = { msg ->
                             isLoading = false
-                            errorMessage = msg
+                            errorMessage = msg.ifBlank { "Google Sign-In failed with an empty error message" }
                         },
                         scope = scope,
                         onAuthCancelled = {
                             isLoading = false
+                            if (errorMessage.isNullOrBlank()) {
+                                errorMessage = "Google Sign-In was cancelled before completion."
+                            }
                         }
                     )
                 },
